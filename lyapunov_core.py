@@ -13,13 +13,13 @@ class ComputeFractals:
     # @param color_resolution how many different shades of self.COLORS are used
     # @param pattern a string of x, y, and z. the pattern defines which fractal is generated.
     # @num_iter at which precision are the pixel values computed.
-    def __init__(self, 
-                 x_min=0.1, 
-                 x_max=3.9, 
-                 y_min=0.1, 
-                 y_max=3.9, 
-                 z_min=0.1, 
-                 z_max=3.9, 
+    def __init__(self,
+                 x_min=0.01,
+                 x_max=4,
+                 y_min=0.01,
+                 y_max=4,
+                 z_min=0.01,
+                 z_max=4, 
                  size = 500,
                  color_resolution = 500,
                  pattern = "xxxyxxyy", 
@@ -126,8 +126,9 @@ class ComputeFractals:
             x = x_space[pos]
             y = y_space[pos]
             z = z[0]
-            if (x <= 0) or (x > 4) or (y <= 0) or (y > 4) or (z <= 0) or (z > 4):
-                x_space[pos] = 0
+            if (x == 2) or (y == 2) or (z == 2) or (x == 0) or (y == 0) or (z == 0):
+                # in this case the log is undefined
+                x_space[pos] = 0 # color the pixel black
             else:
                 for i in range(num_iter):
                     r = (x, y, z)[sequence[i%len_sequence]]
@@ -138,6 +139,9 @@ class ComputeFractals:
         self.fractal_kernel = fractal_kernel
         
     def set_region(self, x_min, x_max, y_min, y_max):
+
+        assert all([(v >= 0) and (v <= 4) for v in [x_min, x_max, y_min, y_max]])
+
         self.x_min = x_min
         self.x_max = x_max
         self.y_min = y_min
@@ -183,6 +187,8 @@ class ComputeFractals:
         self.dev_output.copy_to_host(self.output)
         lambda_min = np.amin(self.output)
         scaling_factor = np.amax(self.output) - lambda_min
+        if (scaling_factor == 0):
+            return np.zeros((self.size, self.size, 3))
         indexes = ((self.color_resolution-1)*(self.output-lambda_min) / scaling_factor).astype(int)
         gradient = self.get_gradient(indexes)
         image = gradient[indexes].reshape((self.size, self.size, 3))

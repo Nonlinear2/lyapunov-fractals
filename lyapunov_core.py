@@ -118,6 +118,7 @@ class ComputeFractals:
         sequence = tuple([{"x":0, "y":1, "z":2}[l] for l in pattern])
         len_sequence = len(sequence)
         num_iter = self.num_iter
+        epsilon = 0.00001
         @cuda.jit
         def fractal_kernel(x_space, y_space, z):
             pos = cuda.grid(1)
@@ -126,15 +127,21 @@ class ComputeFractals:
             x = x_space[pos]
             y = y_space[pos]
             z = z[0]
-            if (x == 2) or (y == 2) or (z == 2) or (x == 0) or (y == 0) or (z == 0):
-                # in this case the log is undefined
-                x_space[pos] = 0 # color the pixel black
-            else:
-                for i in range(num_iter):
-                    r = (x, y, z)[sequence[i%len_sequence]]
-                    x_n = r*x_n*(1-x_n)
-                    lambda_ += log(abs(r*(1-2*x_n)))
-                x_space[pos] = lambda_
+
+            # in the following cases, the log is undefined
+            # so we slightly modify the values
+            if (abs(x - 0) < epsilon) or (abs(x - 2) < epsilon):
+                x += epsilon
+            if (abs(y - 0) < epsilon) or (abs(y - 2) < epsilon):
+                y += epsilon
+            if (abs(z - 0) < epsilon) or (abs(z - 2) < epsilon):
+                z += epsilon
+            
+            for i in range(num_iter):
+                r = (x, y, z)[sequence[i%len_sequence]]
+                x_n = r*x_n*(1-x_n)
+                lambda_ += log(abs(r*(1-2*x_n)))
+            x_space[pos] = lambda_  
         
         self.fractal_kernel = fractal_kernel
         
@@ -233,20 +240,20 @@ class FractalZoom(ComputeFractals):
 
         # boundary checks
         if (x_max - x_min) > 4:
-            x_min = 0
+            x_min = 0.01
             x_max = 4
 
         if (y_max - y_min) > 4:
-            y_min = 0
+            y_min = 0.01
             y_max = 4
              
         if (x_min < 0):
             x_max -= x_min
-            x_min = 0
+            x_min = 0.01
 
         if (y_min < 0):
             y_max -= y_min
-            y_min = 0
+            y_min = 0.01
         
         if (x_max > 4):
             x_min -= x_max - 4 
@@ -279,6 +286,10 @@ class FractalZoom(ComputeFractals):
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                    
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        print(f"x_min = {self.x_min}, x_max = {self.x_max}, y_min = {self.y_min}, y_max = {self.y_max}, {z = }")
             
             mouse_buttons = pygame.mouse.get_pressed()
             keys = pygame.key.get_pressed()

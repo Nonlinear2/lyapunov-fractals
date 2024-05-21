@@ -17,7 +17,7 @@ Running the file `generate_fractal_image.py` creates an image of a fractal and d
 ### Video generation
 Running the file `generate_fractal_video.py` creates and stores a gif cycling through slices of a 3D lyapunov fractal in the z direction.
 ### Interactive pygame window
-Running the file `fractal_zoom.py` opens a pygame window with a fractal. To zoom, keep the left mouse button pressed. To dezoom, press the right mouse button. To cycle through the z values of the fractal, press tab.
+Running the file `fractal_zoom.py` opens a pygame window with a fractal. Press the left mouse button to zoom, the right mouse button to dezoom and tab to cycle through the z values of the fractal. To show the current coordinates, press space.
 
 # Details
 The main class is `ComputeFractals`. Its parameters are the following:

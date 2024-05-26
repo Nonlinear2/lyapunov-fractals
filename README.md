@@ -7,7 +7,7 @@ This is a simple python project to render lyapunov fractals. It relies on numba 
 ## Requirements
 
 - the [numba package with cuda](https://numba.pydata.org/numba-doc/latest/cuda/overview.html#requirements).
-- pygame and pillow, that you can install with `pip install pygame pillow`
+- numpy, pygame and pillow, that you can install with `pip install numpy pygame pillow`
 
 and that's it!
 
@@ -24,7 +24,7 @@ The main class is `ComputeFractals`. Its parameters are the following:
 - x_min, x_max, y_min, y_max, z_min, z_max define the region in which fractals will be computed. These values need to be between 0 and 4.
 - size: the size of the generated images in pixels.
 - color_resolution: how many different shades of the color list `self.COLORS` are used.
-- pattern: a string of "x", "y", and "z". The pattern defines which fractal is generated. It can be changed with the `set_pattern` method.
+- pattern: a string of "x", "y", and "z". The pattern defines which fractal is generated.
 - num_iter: defines at which precision the pixel values are computed.
 
 These parameters can be modified after the class construction by accessing them directly, except for:

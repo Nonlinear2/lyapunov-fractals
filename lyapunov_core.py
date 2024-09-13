@@ -30,7 +30,11 @@ class ComputeFractals:
 
 
         self.COLORS = ["#03071e", "#370617", "#6a040f", "#9d0208", "#d00000", "#FF7F50", "#B8860B", "#FFC700", "#bdb76b", "#6b8e23", "#556b2f", "#006600", "#004d00"]    
-        #self.COLORS = ['#000000','#1A0028', '#2E0854', '#4B0082', '#6A0DAD', '#8A2BE2', '#9370DB', '#BA55D3', '#DA70D6', '#FFB6C1', '#F08080', '#FA8072', '#FF7F50', '#FFA500', '#FF9500', '#FFBF00', '#DAA520', '#FFD700']
+        #self.COLORS = ['#E0D12B', '#DAA520', '#FFBF00', '#FF9500', '#FFA500', '#FF7F50', '#FA8072', '#F08080', '#FFB6C1', "#E0BE4C", "#F5CAAF", '#DA70D6', '#BA55D3', '#9370DB', '#8A2BE2', '#6A0DAD', '#4B0082', '#2E0854', '#1A0028', '#000000']
+        
+        # self.COLORS = ["#03071e", "#370617", "#6a040f", "#9d0208", "#d00000", "#FF7F50", "#B8860B", "#FFC700", "#bdb76b", "#6b8e23", "#556b2f", '#b3cde0', '#a1c4d6', '#8bbdd9', '#7aaed4', '#699ecf', '#5e94c9', '#4b82b4']    
+        
+        # self.COLORS = [ "#9c2a0b", "#ab2d0a", "#bd350b", "#bd400b", "#bd4f0b", "#cc760c", "#cc7f0c", "#d9910b", "#d9ab16", "#4ab80f", "#0f61b8", "#0a2ba3", "#09188f", "#081680", "#060f57", "#020733", "#00010a"]
         
         self.x_min = x_min
         self.x_max = x_max
@@ -56,6 +60,10 @@ class ComputeFractals:
         self.dev_output = cuda.device_array_like(self.dev_x_space)
 
         self.output = np.zeros_like(x_space)
+
+        self.gpu = cuda.get_current_device()
+
+        print(f"used GPU: ", self.gpu.name.decode("utf-8"))
 
     def get_color_idx(self, normalised_graph):
         split = np.linspace(0, 1, len(self.COLORS)+1)[:-1]
@@ -162,7 +170,7 @@ class ComputeFractals:
     
     def get_gradient(self, indexes):
         np.random.seed(21)
-        lambda_count = dict(Counter(np.random.choice(indexes, indexes.size//100))) # sample only 1% of values of image to make
+        lambda_count = dict(Counter(np.random.choice(indexes, min(indexes.size, 100_000)))) # sample only 100_000 values of image to make
         # the gradient. this improves performance
         frequence = np.array([lambda_count.get(i, 0) for i in range(self.color_resolution)])
         gradient = self.generate_gradient(frequence)
@@ -172,14 +180,14 @@ class ComputeFractals:
 
         assert (0 <= z) and (z <= 4)
 
-        if self.size**2 <= 256:
+        if self.size**2 <= self.gpu.MAX_THREADS_PER_BLOCK:
             blockspergrid = 1
             threadsperblock = self.size**2
-        elif self.size <= 256:
+        elif self.size <= self.gpu.MAX_THREADS_PER_BLOCK:
             blockspergrid = self.size
             threadsperblock = self.size
-        elif self.size**2 <= 32768*256:
-            threadsperblock = 256
+        elif self.size**2 <= self.gpu.MAX_GRID_DIM_X * self.gpu.MAX_THREADS_PER_BLOCK:
+            threadsperblock = self.gpu.MAX_THREADS_PER_BLOCK
             blockspergrid = (self.size**2 + (threadsperblock-1)) // threadsperblock
         else:
             print('grid stride loops not implemented')
@@ -248,11 +256,11 @@ class FractalZoom(ComputeFractals):
             y_max = 4
              
         if (x_min < 0):
-            x_max -= x_min
+            x_max -= x_min - 0.01
             x_min = 0.01
 
         if (y_min < 0):
-            y_max -= y_min
+            y_max -= y_min - 0.01
             y_min = 0.01
         
         if (x_max > 4):
@@ -288,14 +296,53 @@ class FractalZoom(ComputeFractals):
                     running = False
                     
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        print(f"x_min = {self.x_min}, x_max = {self.x_max}, y_min = {self.y_min}, y_max = {self.y_max}, {z = }")
+                    if event.key == pygame.K_SPACE or event.key == pygame.K_s:
+
+                        print(f"pattern : {self.pattern}")
+                        print(f"x_min : {self.x_min}")
+                        print(f"x_max : {self.x_max}")
+                        print(f"y_min : {self.y_min}")
+                        print(f"y_max : {self.y_max}")
+                        print(f"z : {z}")
+
+                        if event.key == pygame.K_s:
+                            fractal_computer = ComputeFractals(
+                                pattern=self.pattern, 
+                                x_min = self.x_min, x_max = self.x_max, 
+                                y_min = self.y_min, y_max = self.y_max,
+                                size=2000, color_resolution=1900, num_iter=10000
+                            )
+                            
+                            image = fractal_computer.compute_fractal(z)
+
+                            image = Image.fromarray(np.swapaxes(image.astype(np.uint8), 0, 1))
+        
+                            image.show()
+
+                            while (not any(pygame.mouse.get_pressed())):
+                                pygame.event.get()
+                                if (pygame.key.get_pressed()[pygame.K_s]):        
+                                    image.save(str(self.pattern) + '_' + 
+                                            str(round(self.x_min, 3)) + '_' + 
+                                            str(round(self.x_max, 3)) + '_' + 
+                                            str(round(self.y_min, 3)) + '_' + 
+                                            str(round(self.y_max, 3)) + '_z_' +
+                                            str(round(z, 3)) + '.png')
+                                    
+                                    print("image saved!")
+                                    break
+                                display.blit(curr_surf, (0, 0))
+                                pygame.display.flip()
+                                clock.tick(FPS)
             
             mouse_buttons = pygame.mouse.get_pressed()
             keys = pygame.key.get_pressed()
     
             if keys[pygame.K_TAB]:
                 z += z_interval
+                z %= self.z_max
+            elif keys[pygame.K_BACKSPACE]:
+                z -= z_interval
                 z %= self.z_max
 
             elif mouse_buttons[0]:

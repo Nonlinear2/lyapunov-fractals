@@ -384,6 +384,9 @@ class FractalZoom(ComputeFractals):
                                 display.blit(curr_surf, (0, 0))
                                 pygame.display.flip()
                                 clock.tick(FPS)
+
+                    if event.key == pygame.K_c:
+                        self.set_pattern(self.pattern[-1] + self.pattern[:-1])
             
             mouse_buttons = pygame.mouse.get_pressed()
             keys = pygame.key.get_pressed()

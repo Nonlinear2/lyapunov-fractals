@@ -28,6 +28,9 @@ class ComputeFractals:
 
         assert all([(v >= 0) and (v <= 4) for v in [x_min, x_max, y_min, y_max, z_min, z_max]])
 
+        # self.COLORS = ["#660000", "#990000", "#CC3333", "#FF9900", "#FFC333", "#CCFFCC"]
+        # self.COLORS = ["#000000", "#003300", "#006600", "#CC6600", "#993300"]
+
 
         self.COLORS = ["#03071e", "#370617", "#6a040f", "#9d0208", "#d00000", "#FF7F50", "#B8860B", "#FFC700", "#bdb76b", "#6b8e23", "#556b2f", "#006600", "#004d00"]    
         #self.COLORS = ['#E0D12B', '#DAA520', '#FFBF00', '#FF9500', '#FFA500', '#FF7F50', '#FA8072', '#F08080', '#FFB6C1', "#E0BE4C", "#F5CAAF", '#DA70D6', '#BA55D3', '#9370DB', '#8A2BE2', '#6A0DAD', '#4B0082', '#2E0854', '#1A0028', '#000000']
@@ -36,6 +39,9 @@ class ComputeFractals:
         
         # self.COLORS = [ "#9c2a0b", "#ab2d0a", "#bd350b", "#bd400b", "#bd4f0b", "#cc760c", "#cc7f0c", "#d9910b", "#d9ab16", "#4ab80f", "#0f61b8", "#0a2ba3", "#09188f", "#081680", "#060f57", "#020733", "#00010a"]
         
+
+        # self.COLORS = ["#411d31", "#631b34", "#32535f", "#0b8a8f", "#0eaf9b", "#30e1b9"]
+
         self.x_min = x_min
         self.x_max = x_max
         self.y_min = y_min
@@ -176,7 +182,7 @@ class ComputeFractals:
         gradient = self.generate_gradient(frequence)
         return gradient
 
-    def compute_fractal(self, z):
+    def compute_fractal(self, z, verbose = False):
 
         assert (0 <= z) and (z <= 4)
 
@@ -196,10 +202,20 @@ class ComputeFractals:
         self.dev_output.copy_to_device(self.dev_x_space)
         dev_z = cuda.to_device(np.array([z]).astype(np.float64))
 
+        if (verbose):
+            print("copied data to GPU, executing fractal kernel")
+
         self.fractal_kernel[blockspergrid, threadsperblock](self.dev_output, self.dev_y_space, dev_z)
         cuda.synchronize()
 
+        if (verbose):
+            print("fractal computed, copying data back to cpu")
+
         self.dev_output.copy_to_host(self.output)
+
+        if (verbose):
+            print("data copied, computing color gradient")
+        
         lambda_min = np.amin(self.output)
         scaling_factor = np.amax(self.output) - lambda_min
         if (scaling_factor == 0):
@@ -310,7 +326,7 @@ class FractalZoom(ComputeFractals):
                                 pattern=self.pattern, 
                                 x_min = self.x_min, x_max = self.x_max, 
                                 y_min = self.y_min, y_max = self.y_max,
-                                size=2000, color_resolution=1900, num_iter=10000
+                                size=2000, color_resolution=1900, num_iter=8000
                             )
                             
                             image = fractal_computer.compute_fractal(z)

@@ -1,7 +1,7 @@
 # Lyapunov fractals
-This is a simple python project to render lyapunov fractals. It relies on numba cuda kernels that run on the gpu for relatively fast fractal generation.
+This is a simple python project to render lyapunov fractals. It relies on numba cuda kernels for relatively fast fractal generation.
 
-![Alt text](./outputs/lyapunov_xxxyyxyyyyyyy.png?raw=true)
+![Alt text](./outputs/lyapunov_yyxxyyyyyzz.png?raw=true)
 ![Alt text](./outputs/lyapunov_xyyyxyxyy.png?raw=true)
 
 ## Requirements

@@ -8,7 +8,7 @@ def main():
 
     fractal_computer = ComputeFractals(pattern=pattern, 
         x_min = x_min, x_max = x_max, y_min = y_min, y_max = y_max,
-        size=8000, color_resolution=1900, num_iter=600
+        size=2000, color_resolution=1900, num_iter=1500
     )
 
     image = fractal_computer.compute_fractal(z, verbose=True)
@@ -17,6 +17,7 @@ def main():
     
     image.show()
 
+    print("save the image? y/n")
     if (input() == "y"):
         image.save(str(pattern) + '_' + 
                 str(round(x_min, 3)) + '_' + 

@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QPushButton, QColorDialog, QMessageBox, QScrollArea,
                                QGroupBox, QSpinBox)
 from PySide6.QtCore import Qt, QThread, Signal, QTimer
-from PySide6.QtGui import QPixmap, QImage
+from PySide6.QtGui import QPixmap, QImage, QRegularExpressionValidator
 from numba.cuda import get_current_device
 from lyapunov_core import ComputeFractals
 from utils import valid_hex_string
@@ -151,13 +151,13 @@ class FractalApp(QMainWindow):
 
         self.inputs = {}
 
-        line_edit = QLineEdit("yyxxyyyyyzz")
-        line_edit.textChanged.connect(self.on_parameter_changed)
-
+        pattern_box = QLineEdit("yyxxyyyyyzz")
+        pattern_box.textChanged.connect(self.on_parameter_changed)
+        pattern_box.setValidator(QRegularExpressionValidator("^[xyzXYZ]{0,50}$"))
         grid_layout.addWidget(QLabel("Pattern"), 0, 0)
-        grid_layout.addWidget(line_edit, 0, 1)
+        grid_layout.addWidget(pattern_box, 0, 1)
 
-        self.inputs["pattern"] = line_edit
+        self.inputs["pattern"] = pattern_box
         
         for i, (key, (label_text, default_value)) in enumerate(coords_fields.items(), 1):
             spin_box = QDoubleSpinBox()
@@ -172,7 +172,6 @@ class FractalApp(QMainWindow):
             
             self.inputs[key] = spin_box
 
-        # add color resolution right after y_max
         color_resolution = QSpinBox()
         color_resolution.setRange(50, 10000)
         color_resolution.setSingleStep(50)
@@ -187,11 +186,9 @@ class FractalApp(QMainWindow):
         layout.addLayout(grid_layout)
 
     def create_resolution_settings(self, layout):
-        # Resolution settings group
         res_group = QGroupBox("Resolution Settings")
         res_layout = QGridLayout(res_group)
         
-        # Real-time mode settings
         realtime_label = QLabel("Real-Time Mode:")
         realtime_label.setStyleSheet("font-weight: bold;")
         res_layout.addWidget(realtime_label, 0, 0, 1, 2)
@@ -212,7 +209,6 @@ class FractalApp(QMainWindow):
         self.low_res_iter.valueChanged.connect(self.on_parameter_changed)
         res_layout.addWidget(self.low_res_iter, 2, 1)
         
-        # High resolution settings
         high_res_label = QLabel("High Resolution Mode:")
         high_res_label.setStyleSheet("font-weight: bold; margin-top: 10px;")
         res_layout.addWidget(high_res_label, 3, 0, 1, 2)
@@ -251,6 +247,7 @@ class FractalApp(QMainWindow):
             
             color_input = QLineEdit(default_colors[i])
             color_input.setMaximumWidth(80)
+            color_input.setValidator(QRegularExpressionValidator("^#[0-9A-Fa-f]{6}$"))
             color_input.textChanged.connect(self.on_parameter_changed)
             
             color_button = QPushButton(f"Color {i+1}")
@@ -286,14 +283,13 @@ class FractalApp(QMainWindow):
         layout.addWidget(self.save_btn)
     
     # Correct bounds to ensure min < max
-    def correct_bounds(self, changed_field):
+    def sanitize_inputs(self, changed_field):
         try:
             x_min = self.inputs['x_min'].value()
             x_max = self.inputs['x_max'].value()
             y_min = self.inputs['y_min'].value()
             y_max = self.inputs['y_max'].value()
-            
-            # Handle x bounds
+
             if changed_field == 'x_min' and x_min >= x_max:
                 self.inputs['x_min'].setValue(x_max)
 
@@ -305,14 +301,14 @@ class FractalApp(QMainWindow):
 
             elif changed_field == 'y_max' and y_max <= y_min:
                 self.inputs['y_max'].setValue(y_min)
-                
+
         except ValueError:
             # Ignore invalid number formats (let user continue typing)
             pass
 
     def on_parameter_changed(self, changed_field=None):
         """Handle parameter changes by regenerating the fractal if in real-time mode"""
-        self.correct_bounds(changed_field)
+        self.sanitize_inputs(changed_field)
 
         if self.real_time_mode and self.current_fractal:
             # Debounce the regeneration using a timer
@@ -625,7 +621,6 @@ class FractalApp(QMainWindow):
                 self.show_error(f"Error saving image: {e}")
 
     def show_error(self, message):
-        """Show error message dialog"""
         msg_box = QMessageBox()
         msg_box.setIcon(QMessageBox.Critical)
         msg_box.setWindowTitle("Error")

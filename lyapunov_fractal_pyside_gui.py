@@ -109,11 +109,18 @@ class FractalApp(QMainWindow):
         self.current_fractal = None  # Store current fractal instance for real-time mode
         self.real_time_mode = False  # Track current mode
 
-        self.z = 0
-        self.x_min = 0
-        self.x_max = 0
-        self.y_min = 0
-        self.y_max = 0
+        self.z = None
+        self.x_min = None
+        self.x_max = None
+        self.y_min = None
+        self.y_max = None
+
+        self.low_res_btn_text = "Start Real-Time Generation"
+        self.low_res_btn_style = "QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 10px; }"     
+        self.high_res_btn_text = "Generate High-Res Image"
+        self.high_res_btn_style = "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }"
+        self.save_btn_text = "Save High-Res Image"
+        self.save_btn_style = "QPushButton { background-color: #FF9800; color: white; padding: 8px; }"
 
         gpu = get_current_device()
         self.max_image_size = (gpu.MAX_GRID_DIM_X * gpu.MAX_THREADS_PER_BLOCK)**0.5
@@ -262,27 +269,21 @@ class FractalApp(QMainWindow):
     
     def create_buttons(self, layout):
         # Real-time generation button
-        self.low_res_btn = QPushButton("Start Real-Time Generation")
+        self.low_res_btn = QPushButton(self.low_res_btn_text)
         self.low_res_btn.clicked.connect(self.toggle_real_time_mode)
-        self.low_res_btn.setStyleSheet(
-            "QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 10px; }"
-        )
+        self.low_res_btn.setStyleSheet(self.low_res_btn_style)
         layout.addWidget(self.low_res_btn)
         
         # Generate high-res button
-        self.high_res_btn = QPushButton("Generate High-Res Image")
+        self.high_res_btn = QPushButton(self.high_res_btn_text)
         self.high_res_btn.clicked.connect(lambda _: self.generate_image(is_low_res=False))
-        self.high_res_btn.setStyleSheet(
-            "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }"
-        )
+        self.high_res_btn.setStyleSheet(self.high_res_btn_style)
         layout.addWidget(self.high_res_btn)
         
         # Save button (for high-res images only)
-        self.save_btn = QPushButton("Save High-Res Image")
+        self.save_btn = QPushButton(self.save_btn_text)
         self.save_btn.clicked.connect(self.save_image)
-        self.save_btn.setStyleSheet(
-            "QPushButton { background-color: #FF9800; color: white; padding: 8px; }"
-        )
+        self.save_btn.setStyleSheet(self.save_btn_style)
         layout.addWidget(self.save_btn)
 
     # Correct bounds to ensure min < max
@@ -394,21 +395,32 @@ class FractalApp(QMainWindow):
             )
             
             # Update button text
-            self.low_res_btn.setText("Start Real-Time Generation")
-            self.low_res_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 10px; }")
+            self.low_res_btn.setText(self.low_res_btn_text)
+            self.low_res_btn.setStyleSheet(self.low_res_btn_style)
     
         else:
+            self.real_time_mode = True
+
+            # Update button to show exit option
+            self.low_res_btn.setText("Exit Real-Time Mode")
+            self.low_res_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 10px; }")
+            self.low_res_btn.setEnabled(True)
+
             self.generate_image(is_low_res=True)
 
-    # Generate low-resolution image for zooming in real time
     def generate_image(self, is_low_res):
         try:
             params, z_value = self.get_fractal_params(is_low_res=is_low_res)
             
-            # Update button state
-            self.low_res_btn.setText("Generating...")
-            self.low_res_btn.setEnabled(False)
-
+            if is_low_res:
+                # Update button state
+                self.low_res_btn.setText("Generating...")
+                self.low_res_btn.setEnabled(False)
+            elif self.real_time_mode:
+                self.real_time_mode = False
+                self.current_fractal = None
+                self.low_res_btn.setText(self.low_res_btn_text)
+                self.low_res_btn.setStyleSheet(self.low_res_btn_style)
             # Start worker thread
             self.worker = FractalWorker(params, z_value)
             self.worker.finished.connect(lambda img: self.on_image_generated(img, is_low_res))
@@ -425,24 +437,12 @@ class FractalApp(QMainWindow):
             # Store fractal instance for real-time zooming
             params, z_value = self.get_fractal_params(is_low_res=True)
             self.current_fractal = ComputeFractals(**params)
-            # Enter real-time mode
-            self.real_time_mode = True
-            # Update button to show exit option
-            self.low_res_btn.setText("Exit Real-Time Mode")
-            self.low_res_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 10px; }")
-            self.low_res_btn.setEnabled(True)
 
         else:
             self.current_high_res_image = img
-            # Exit real-time mode since we're now showing high-res
-            if self.real_time_mode:
-                self.real_time_mode = False
-                self.current_fractal = None
-                self.low_res_btn.setText("Start Real-Time Generation")
-                self.low_res_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 10px; }")
-            
+
             # Re-enable generate button
-            self.high_res_btn.setText("Generate High-Res Image")
+            self.high_res_btn.setText(self.high_res_btn_text)
             self.high_res_btn.setEnabled(True)
         self.display_image(img)
 

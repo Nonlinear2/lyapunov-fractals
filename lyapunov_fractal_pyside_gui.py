@@ -2,7 +2,7 @@ import sys
 import numpy as np
 from PIL import Image
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                               QHBoxLayout, QGridLayout, QLabel, QLineEdit, 
+                               QHBoxLayout, QGridLayout, QLabel, QLineEdit, QDoubleSpinBox,
                                QPushButton, QColorDialog, QMessageBox, QScrollArea,
                                QGroupBox, QSpinBox)
 from PySide6.QtCore import Qt, QThread, Signal, QTimer
@@ -141,29 +141,36 @@ class FractalApp(QMainWindow):
         # Create grid layout for input fields
         grid_layout = QGridLayout()
         
-        # Input field definitions
-        self.fields = {
-            'pattern': ('Pattern', 'yyxxyyyyyzz'),
-            'z': ('Z', '2.86'),
-            'x_min': ('X Min', '1.009'),
-            'x_max': ('X Max', '1.244'),
-            'y_min': ('Y Min', '3.662'),
-            'y_max': ('Y Max', '3.898'),
+        coords_fields = {
+            'z': ('Z', 2.86),
+            'x_min': ('X Min', 1.009),
+            'x_max': ('X Max', 1.244),
+            'y_min': ('Y Min', 3.662),
+            'y_max': ('Y Max', 3.898),
         }
-        
+
         self.inputs = {}
+
+        line_edit = QLineEdit("yyxxyyyyyzz")
+        line_edit.textChanged.connect(self.on_parameter_changed)
+
+        grid_layout.addWidget(QLabel("Pattern"), 0, 0)
+        grid_layout.addWidget(line_edit, 0, 1)
+
+        self.inputs["pattern"] = line_edit
         
-        for i, (key, (label_text, default_value)) in enumerate(self.fields.items()):
-            label = QLabel(label_text)
-            line_edit = QLineEdit(default_value)
+        for i, (key, (label_text, default_value)) in enumerate(coords_fields.items(), 1):
+            spin_box = QDoubleSpinBox()
+            spin_box.setValue(default_value)
+            spin_box.setDecimals(5)
+            spin_box.valueChanged.connect(lambda text, field=key: self.on_parameter_changed(field))
             
-            # Connect change signals to regeneration function
-            line_edit.textChanged.connect(self.on_parameter_changed)
+            spin_box.setRange(0, 4)
+
+            grid_layout.addWidget(QLabel(label_text), i, 0)
+            grid_layout.addWidget(spin_box, i, 1)
             
-            grid_layout.addWidget(label, i, 0)
-            grid_layout.addWidget(line_edit, i, 1)
-            
-            self.inputs[key] = line_edit
+            self.inputs[key] = spin_box
 
         # add color resolution right after y_max
         color_res_label = QLabel("Color Resolution")
@@ -173,8 +180,8 @@ class FractalApp(QMainWindow):
         self.color_resolution.setKeyboardTracking(False)  # only emit signal when editing is finished
         self.color_resolution.valueChanged.connect(self.on_parameter_changed)
         
-        grid_layout.addWidget(color_res_label, len(self.fields), 0)
-        grid_layout.addWidget(self.color_resolution, len(self.fields), 1)
+        grid_layout.addWidget(color_res_label, 6, 0)
+        grid_layout.addWidget(self.color_resolution, 6, 1)
         
         layout.addLayout(grid_layout)
 
@@ -277,8 +284,35 @@ class FractalApp(QMainWindow):
         self.save_btn.setStyleSheet("QPushButton { background-color: #FF9800; color: white; padding: 8px; }")
         layout.addWidget(self.save_btn)
     
-    def on_parameter_changed(self):
+    # Correct bounds to ensure min < max
+    def correct_bounds(self, changed_field):
+        try:
+            x_min = self.inputs['x_min'].value()
+            x_max = self.inputs['x_max'].value()
+            y_min = self.inputs['y_min'].value()
+            y_max = self.inputs['y_max'].value()
+            
+            # Handle x bounds
+            if changed_field == 'x_min' and x_min >= x_max:
+                self.inputs['x_min'].setValue(x_max)
+
+            elif changed_field == 'x_max' and x_max <= x_min:
+                self.inputs['x_max'].setValue(x_min)
+
+            if changed_field == 'y_min' and y_min >= y_max:
+                self.inputs['y_min'].setValue(y_max)
+
+            elif changed_field == 'y_max' and y_max <= y_min:
+                self.inputs['y_max'].setValue(y_min)
+                
+        except ValueError:
+            # Ignore invalid number formats (let user continue typing)
+            pass
+
+    def on_parameter_changed(self, changed_field=None):
         """Handle parameter changes by regenerating the fractal if in real-time mode"""
+        self.correct_bounds(changed_field)
+
         if self.real_time_mode and self.current_fractal:
             # Debounce the regeneration using a timer
             if not hasattr(self, 'regeneration_timer'):
@@ -333,17 +367,17 @@ class FractalApp(QMainWindow):
         
         params = {
             'pattern': self.inputs['pattern'].text().strip(),
-            'x_min': float(self.inputs['x_min'].text()),
-            'x_max': float(self.inputs['x_max'].text()),
-            'y_min': float(self.inputs['y_min'].text()),
-            'y_max': float(self.inputs['y_max'].text()),
+            'x_min': self.inputs['x_min'].value(),
+            'x_max': self.inputs['x_max'].value(),
+            'y_min': self.inputs['y_min'].value(),
+            'y_max': self.inputs['y_max'].value(),
             'size': size,
             'color_resolution': self.color_resolution.value(),
             'num_iter': iterations,
             'colors': colors
         }
         
-        z_value = float(self.inputs['z'].text())
+        z_value = self.inputs['z'].value()
         
         return params, z_value
 
@@ -484,11 +518,11 @@ class FractalApp(QMainWindow):
     
     # convert mouse position ratios to fractal coordinates
     def get_mouse_coords_in_region(self, pos_x_ratio, pos_y_ratio):
-        x_min = float(self.inputs['x_min'].text())
-        x_max = float(self.inputs['x_max'].text())
-        y_min = float(self.inputs['y_min'].text())
-        y_max = float(self.inputs['y_max'].text())
-        
+        x_min = self.inputs['x_min'].value()
+        x_max = self.inputs['x_max'].value()
+        y_min = self.inputs['y_min'].value()
+        y_max = self.inputs['y_max'].value()
+
         pos_x = x_min + (x_max - x_min) * pos_x_ratio
         # we flip the y axis because it is pointing downwards
         pos_y = y_min + (y_max - y_min) * (1 - pos_y_ratio)
@@ -503,10 +537,10 @@ class FractalApp(QMainWindow):
     
     # calculate new region bounds after zoom
     def zoom_to(self, pos, zoom_proportion):
-        x_min = float(self.inputs['x_min'].text())
-        x_max = float(self.inputs['x_max'].text())
-        y_min = float(self.inputs['y_min'].text())
-        y_max = float(self.inputs['y_max'].text())
+        x_min = self.inputs['x_min'].value()
+        x_max = self.inputs['x_max'].value()
+        y_min = self.inputs['y_min'].value()
+        y_max = self.inputs['y_max'].value()
         
         new_x_min = pos[0] - (zoom_proportion * (x_max - x_min)) / 2
         new_y_min = pos[1] - (zoom_proportion * (y_max - y_min)) / 2
@@ -550,14 +584,14 @@ class FractalApp(QMainWindow):
         new_bounds = self.zoom_to(mouse_coords, zoom_proportion)
 
         # Update input fields
-        self.inputs['x_min'].setText(f"{new_bounds[0]:.6f}")
-        self.inputs['x_max'].setText(f"{new_bounds[1]:.6f}")
-        self.inputs['y_min'].setText(f"{new_bounds[2]:.6f}")
-        self.inputs['y_max'].setText(f"{new_bounds[3]:.6f}")
+        self.inputs['x_min'].setValue(new_bounds[0])
+        self.inputs['x_max'].setValue(new_bounds[1])
+        self.inputs['y_min'].setValue(new_bounds[2])
+        self.inputs['y_max'].setValue(new_bounds[3])
         
         # Update fractal region and generate new image quickly
         self.current_fractal.set_region(*new_bounds)
-        z_value = float(self.inputs['z'].text())
+        z_value = self.inputs['z'].value()
         img_array = self.current_fractal.compute_fractal(z_value)
         
         # Display immediately

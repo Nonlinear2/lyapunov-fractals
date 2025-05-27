@@ -43,7 +43,6 @@ class FractalWorker(QThread):
 # handle mouse clicks for zooming
 class FractalLabel(QLabel):
     zoom = Signal(float, float, float)
-    zoom_stopped = Signal()  # when mouse is released
     
     def __init__(self):
         super().__init__()
@@ -83,7 +82,6 @@ class FractalLabel(QLabel):
         if self.is_zooming:
             self.is_zooming = False
             self.zoom_timer.stop()
-            self.zoom_stopped.emit()
 
     def mouseMoveEvent(self, event):
         if self.is_zooming and self.pixmap():
@@ -152,7 +150,6 @@ class FractalApp(QMainWindow):
         # Right panel for fractal display
         self.fractal_label = FractalLabel()
         self.fractal_label.zoom.connect(self.on_zoom)
-        self.fractal_label.zoom_stopped.connect(self.on_zoom_stopped)
         
         # Create scroll area for the fractal display
         scroll_area = QScrollArea()
@@ -479,6 +476,29 @@ class FractalApp(QMainWindow):
         new_pos_y = coef * (pos_y_ratio * size - size/2) + size/2
         return (new_pos_x / size, new_pos_y / size)
     
+    def on_zoom(self, x_ratio, y_ratio, zoom_proportion):
+        if not self.current_fractal or not self.real_time_mode:
+            return
+
+        mouse_pos = self.center_zoom(x_ratio, y_ratio, 0.1)
+        mouse_coords = self.get_mouse_coords_in_region(mouse_pos[0], mouse_pos[1])
+
+        new_bounds = self.zoom_to(mouse_coords, zoom_proportion)
+
+        # Update input fields
+        self.x_min.setValue(new_bounds[0])
+        self.x_max.setValue(new_bounds[1])
+        self.y_min.setValue(new_bounds[2])
+        self.y_max.setValue(new_bounds[3])
+
+        # Update fractal region and generate new image quickly
+        self.current_fractal.set_region(*new_bounds)
+        img_array = self.current_fractal.compute_fractal(self.z.value())
+
+        # Display immediately
+        img = Image.fromarray(np.swapaxes(img_array.astype(np.uint8), 0, 1))
+        self.display_image(img)
+
     # calculate new region bounds after zoom
     def zoom_to(self, pos, zoom_proportion):
         x_min = self.x_min.value()
@@ -517,35 +537,7 @@ class FractalApp(QMainWindow):
             new_y_max = 4
         
         return new_x_min, new_x_max, new_y_min, new_y_max
-    
-    def on_zoom(self, x_ratio, y_ratio, zoom_proportion):
-        if not self.current_fractal or not self.real_time_mode:
-            return
 
-        mouse_pos = self.center_zoom(x_ratio, y_ratio, 0.1)
-        mouse_coords = self.get_mouse_coords_in_region(mouse_pos[0], mouse_pos[1])
-
-        new_bounds = self.zoom_to(mouse_coords, zoom_proportion)
-
-        # Update input fields
-        self.x_min.setValue(new_bounds[0])
-        self.x_max.setValue(new_bounds[1])
-        self.y_min.setValue(new_bounds[2])
-        self.y_max.setValue(new_bounds[3])
-
-        # Update fractal region and generate new image quickly
-        self.current_fractal.set_region(*new_bounds)
-        img_array = self.current_fractal.compute_fractal(self.z.value())
-
-        # Display immediately
-        img = Image.fromarray(np.swapaxes(img_array.astype(np.uint8), 0, 1))
-        self.display_image(img)
-
-    def on_zoom_stopped(self):
-        """Handle when zooming stops (mouse released)"""
-        # This can be used for any cleanup or final actions after zooming
-        pass
-    
     def save_image(self):
         """Save the current high-resolution image"""
         if self.current_high_res_image:

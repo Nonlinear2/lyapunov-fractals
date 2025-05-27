@@ -50,7 +50,7 @@ class FractalLabel(QLabel):
 
     def mousePressEvent(self, event):
         if self.pixmap():
-            # Calculate click position as ratio
+            # Calculate click position as ratio of fractal canvas
             x_ratio = event.position().x() / self.width()
             y_ratio = event.position().y() / self.height()
             self.last_mouse_pos = (x_ratio, y_ratio)
@@ -82,9 +82,9 @@ class FractalLabel(QLabel):
     def continuous_zoom(self):
         if self.is_zooming and self.last_mouse_pos:
             if self.zoom_type == 'in':
-                self.zoom_in.emit(self.last_mouse_pos[0], self.last_mouse_pos[1])
+                self.zoom_in.emit(*self.last_mouse_pos)
             elif self.zoom_type == 'out':
-                self.zoom_out.emit(self.last_mouse_pos[0], self.last_mouse_pos[1])
+                self.zoom_out.emit(*self.last_mouse_pos)
 
 
 class FractalApp(QMainWindow):
@@ -495,14 +495,15 @@ class FractalApp(QMainWindow):
         y_max = float(self.inputs['y_max'].text())
         
         pos_x = x_min + (x_max - x_min) * pos_x_ratio
-        pos_y = y_min + (y_max - y_min) * (1 - pos_y_ratio)  # flip y axis
+        # we flip the y axis because it is pointing downwards
+        pos_y = y_min + (y_max - y_min) * (1 - pos_y_ratio)
         
         return pos_x, pos_y
     
-    def center_zoom(self, mouse_pos, coef):
+    def center_zoom(self, pos_x_ratio, pos_y_ratio, coef):
         size = self.low_res_size.value()
-        new_pos_x = coef * (mouse_pos[0] * size - size/2) + size/2
-        new_pos_y = coef * (mouse_pos[1] * size - size/2) + size/2
+        new_pos_x = coef * (pos_x_ratio * size - size/2) + size/2
+        new_pos_y = coef * (pos_y_ratio * size - size/2) + size/2
         return (new_pos_x / size, new_pos_y / size)
     
     # calculate new region bounds after zoom
@@ -548,7 +549,7 @@ class FractalApp(QMainWindow):
         if not self.current_fractal or not self.real_time_mode:
             return
         
-        mouse_pos = self.center_zoom((x_ratio, y_ratio), 0.1)
+        mouse_pos = self.center_zoom(x_ratio, y_ratio, 0.1)
         mouse_coords = self.get_mouse_coords_in_region(mouse_pos[0], mouse_pos[1])
         new_bounds = self.zoom_to(mouse_coords, self.zoom_proportion)
         
@@ -572,7 +573,7 @@ class FractalApp(QMainWindow):
             return
 
         # Zoom out by using inverse zoom proportion
-        mouse_pos = self.center_zoom((x_ratio, y_ratio), 0.1)
+        mouse_pos = self.center_zoom(x_ratio, y_ratio, 0.1)
         mouse_coords = self.get_mouse_coords_in_region(mouse_pos[0], mouse_pos[1])
         new_bounds = self.zoom_to(mouse_coords, 1/self.zoom_proportion)
         

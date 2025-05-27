@@ -29,8 +29,7 @@ class FractalWorker(QThread):
 
 # handle mouse clicks for zooming
 class FractalLabel(QLabel):
-    zoom_in = Signal(float, float)
-    zoom_out = Signal(float, float)
+    zoom = Signal(float, float, float)
     zoom_stopped = Signal()  # when mouse is released
     
     def __init__(self):
@@ -55,15 +54,16 @@ class FractalLabel(QLabel):
             y_ratio = event.position().y() / self.height()
             self.last_mouse_pos = (x_ratio, y_ratio)
             
-            if event.button() == Qt.LeftButton:
-                self.zoom_type = 'in'
+            if event.button() in [Qt.LeftButton, Qt.RightButton]:
                 self.is_zooming = True
-                self.zoom_in.emit(x_ratio, y_ratio)
-                self.zoom_timer.start()
-            elif event.button() == Qt.RightButton:
-                self.zoom_type = 'out'
-                self.is_zooming = True
-                self.zoom_out.emit(x_ratio, y_ratio)
+                if (event.button() == Qt.LeftButton):
+                    # zoom in
+                    self.zoom_proportion = 0.98
+                else:
+                    # zoom out
+                    self.zoom_proportion = 1/0.98
+
+                self.zoom.emit(x_ratio, y_ratio, self.zoom_proportion)
                 self.zoom_timer.start()
 
     def mouseReleaseEvent(self, event):
@@ -81,10 +81,7 @@ class FractalLabel(QLabel):
 
     def continuous_zoom(self):
         if self.is_zooming and self.last_mouse_pos:
-            if self.zoom_type == 'in':
-                self.zoom_in.emit(*self.last_mouse_pos)
-            elif self.zoom_type == 'out':
-                self.zoom_out.emit(*self.last_mouse_pos)
+            self.zoom.emit(*self.last_mouse_pos, self.zoom_proportion)
 
 
 class FractalApp(QMainWindow):
@@ -96,7 +93,6 @@ class FractalApp(QMainWindow):
         # Initialize variables
         self.current_high_res_image = None
         self.worker = None
-        self.zoom_proportion = 0.98
         self.current_fractal = None  # Store current fractal instance for real-time mode
         self.real_time_mode = False  # Track current mode
 
@@ -129,8 +125,7 @@ class FractalApp(QMainWindow):
 
         # Right panel for fractal display
         self.fractal_label = FractalLabel()
-        self.fractal_label.zoom_in.connect(self.on_zoom_in)
-        self.fractal_label.zoom_out.connect(self.on_zoom_out)
+        self.fractal_label.zoom.connect(self.on_zoom)
         self.fractal_label.zoom_stopped.connect(self.on_zoom_stopped)
         
         # Create scroll area for the fractal display
@@ -545,38 +540,15 @@ class FractalApp(QMainWindow):
         
         return new_x_min, new_x_max, new_y_min, new_y_max
     
-    def on_zoom_in(self, x_ratio, y_ratio):
-        if not self.current_fractal or not self.real_time_mode:
-            return
-        
-        mouse_pos = self.center_zoom(x_ratio, y_ratio, 0.1)
-        mouse_coords = self.get_mouse_coords_in_region(mouse_pos[0], mouse_pos[1])
-        new_bounds = self.zoom_to(mouse_coords, self.zoom_proportion)
-        
-        # Update input fields
-        self.inputs['x_min'].setText(f"{new_bounds[0]:.6f}")
-        self.inputs['x_max'].setText(f"{new_bounds[1]:.6f}")
-        self.inputs['y_min'].setText(f"{new_bounds[2]:.6f}")
-        self.inputs['y_max'].setText(f"{new_bounds[3]:.6f}")
-        
-        # Update fractal region and generate new image quickly
-        self.current_fractal.set_region(*new_bounds)
-        z_value = float(self.inputs['z'].text())
-        img_array = self.current_fractal.compute_fractal(z_value)
-        
-        # Display immediately
-        img = Image.fromarray(np.swapaxes(img_array.astype(np.uint8), 0, 1))
-        self.display_image(img)
-
-    def on_zoom_out(self, x_ratio, y_ratio):
+    def on_zoom(self, x_ratio, y_ratio, zoom_proportion):
         if not self.current_fractal or not self.real_time_mode:
             return
 
-        # Zoom out by using inverse zoom proportion
         mouse_pos = self.center_zoom(x_ratio, y_ratio, 0.1)
         mouse_coords = self.get_mouse_coords_in_region(mouse_pos[0], mouse_pos[1])
-        new_bounds = self.zoom_to(mouse_coords, 1/self.zoom_proportion)
-        
+
+        new_bounds = self.zoom_to(mouse_coords, zoom_proportion)
+
         # Update input fields
         self.inputs['x_min'].setText(f"{new_bounds[0]:.6f}")
         self.inputs['x_max'].setText(f"{new_bounds[1]:.6f}")

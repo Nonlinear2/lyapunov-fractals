@@ -448,26 +448,7 @@ class FractalApp(QMainWindow):
         pixmap = QPixmap.fromImage(qimg)
         self.fractal_label.setPixmap(pixmap)
         self.fractal_label.resize(pixmap.size())
-    
-    # convert mouse position ratios to fractal coordinates
-    def get_mouse_coords_in_region(self, pos_x_ratio, pos_y_ratio):
-        x_min = self.x_min.value()
-        x_max = self.x_max.value()
-        y_min = self.y_min.value()
-        y_max = self.y_max.value()
 
-        pos_x = x_min + (x_max - x_min) * pos_x_ratio
-        # we flip the y axis because it is pointing downwards
-        pos_y = y_min + (y_max - y_min) * (1 - pos_y_ratio)
-        
-        return pos_x, pos_y
-    
-    def center_zoom(self, pos_x_ratio, pos_y_ratio, coef):
-        size = self.low_res_size.value()
-        new_pos_x = coef * (pos_x_ratio * size - size/2) + size/2
-        new_pos_y = coef * (pos_y_ratio * size - size/2) + size/2
-        return (new_pos_x / size, new_pos_y / size)
-    
     def on_zoom(self, x_ratio, y_ratio, zoom_proportion):
         if not self.current_fractal or not self.real_time_mode:
             return
@@ -490,6 +471,25 @@ class FractalApp(QMainWindow):
         # Display immediately
         self.display_image(img)
 
+    # convert mouse position ratios to fractal coordinates
+    def get_mouse_coords_in_region(self, pos_x_ratio, pos_y_ratio):
+        x_min = self.x_min.value()
+        x_max = self.x_max.value()
+        y_min = self.y_min.value()
+        y_max = self.y_max.value()
+
+        pos_x = x_min + (x_max - x_min) * pos_x_ratio
+        # we flip the y axis because it is pointing downwards
+        pos_y = y_min + (y_max - y_min) * (1 - pos_y_ratio)
+        
+        return pos_x, pos_y
+    
+    def center_zoom(self, pos_x_ratio, pos_y_ratio, coef):
+        size = self.low_res_size.value()
+        new_pos_x = coef * (pos_x_ratio * size - size/2) + size/2
+        new_pos_y = coef * (pos_y_ratio * size - size/2) + size/2
+        return (new_pos_x / size, new_pos_y / size)
+    
     # calculate new region bounds after zoom
     def zoom_to(self, pos, zoom_proportion):
         x_min = self.x_min.value()

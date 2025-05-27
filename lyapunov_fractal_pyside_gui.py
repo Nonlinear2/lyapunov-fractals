@@ -273,7 +273,7 @@ class FractalApp(QMainWindow):
         
         # Generate high-res button
         self.high_res_btn = QPushButton(self.high_res_btn_text)
-        self.high_res_btn.clicked.connect(lambda _: self.generate_image(is_low_res=False))
+        self.high_res_btn.clicked.connect(lambda _: self.start_image_gen(is_low_res=False))
         self.high_res_btn.setStyleSheet(self.high_res_btn_style)
         layout.addWidget(self.high_res_btn)
         
@@ -403,32 +403,28 @@ class FractalApp(QMainWindow):
             self.low_res_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 10px; }")
             self.low_res_btn.setEnabled(True)
 
-            self.generate_image(is_low_res=True)
+            self.start_image_gen(is_low_res=True)
 
-    def generate_image(self, is_low_res):
-        try:
-            params, z_value = self.get_fractal_params(is_low_res=is_low_res)
-            
-            if is_low_res:
-                # Update button state
-                self.low_res_btn.setText("Generating...")
-                self.low_res_btn.setEnabled(False)
-            elif self.real_time_mode:
-                self.real_time_mode = False
-                self.current_fractal = None
-                self.low_res_btn.setText(self.low_res_btn_text)
-                self.low_res_btn.setStyleSheet(self.low_res_btn_style)
-            # Start worker thread
-            self.worker = FractalWorker(params, z_value)
-            self.worker.finished.connect(lambda img: self.on_image_generated(img, is_low_res))
-            self.worker.start()
+    def start_image_gen(self, is_low_res):
+        params, z_value = self.get_fractal_params(is_low_res=is_low_res)
+        
+        if is_low_res:
+            # Update button state
+            self.low_res_btn.setText("Generating...")
+            self.low_res_btn.setEnabled(False)
 
-        except Exception as e:
-            self.show_error(str(e))
+        elif self.real_time_mode:
+            self.real_time_mode = False
+            self.current_fractal = None
+            self.low_res_btn.setText(self.low_res_btn_text)
+            self.low_res_btn.setStyleSheet(self.low_res_btn_style)
 
-    def on_image_generated(self, img_array, is_low_res):
-        # Convert numpy array to PIL Image
-        img = Image.fromarray(np.swapaxes(img_array.astype(np.uint8), 0, 1))
+        # Start worker thread
+        self.worker = FractalWorker(params, z_value)
+        self.worker.finished.connect(lambda img: self.on_image_generated(img, is_low_res))
+        self.worker.start()
+
+    def on_image_generated(self, img, is_low_res):
 
         if is_low_res:
             # Store fractal instance for real-time zooming
@@ -444,13 +440,9 @@ class FractalApp(QMainWindow):
         self.display_image(img)
 
     def display_image(self, img):
-        # Convert PIL image to QPixmap
-        img_resized = img.copy()
-        img_resized.thumbnail((600, 600))
         
-        # Convert to QImage
-        w, h = img_resized.size
-        qimg = QImage(img_resized.tobytes(), w, h, QImage.Format_RGB888)
+        img = np.ascontiguousarray(np.swapaxes(img.astype(np.uint8), 0, 1))
+        qimg = QImage(img.data, img.shape[1], img.shape[0], img.strides[0], QImage.Format_RGB888)
         
         # Convert to QPixmap and display
         pixmap = QPixmap.fromImage(qimg)
@@ -493,10 +485,9 @@ class FractalApp(QMainWindow):
 
         # Update fractal region and generate new image quickly
         self.current_fractal.set_region(*new_bounds)
-        img_array = self.current_fractal.compute_fractal(self.z.value())
+        img = self.current_fractal.compute_fractal(self.z.value())
 
         # Display immediately
-        img = Image.fromarray(np.swapaxes(img_array.astype(np.uint8), 0, 1))
         self.display_image(img)
 
     # calculate new region bounds after zoom
@@ -552,9 +543,10 @@ class FractalApp(QMainWindow):
                 )
                 
                 if file_path:
-                    self.current_high_res_image.save(file_path)
+                    img = Image.fromarray(np.swapaxes(self.current_high_res_image.astype(np.uint8), 0, 1))
+                    img.save(file_path)
                     QMessageBox.information(self, "Success", f"High-resolution image saved to {file_path}")
-                    
+
             except Exception as e:
                 self.show_error(f"Error saving image: {e}")
 

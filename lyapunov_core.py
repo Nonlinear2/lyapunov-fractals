@@ -221,7 +221,6 @@ class ComputeFractals:
 
         return image
     
-    
     def create_fractal_video(self, num_frames):
         video = []
         for idx, z in enumerate(np.linspace(self.z_min, self.z_max, num_frames), 1):

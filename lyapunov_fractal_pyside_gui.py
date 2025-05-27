@@ -417,66 +417,47 @@ class FractalApp(QMainWindow):
             # Start worker thread
             self.worker = FractalWorker(params, z_value)
             if is_low_res:
-                self.worker.finished.connect(self.on_preview_generated)
                 error_handler = lambda err: self.on_fractal_error(err, "Start Real-Time Generation", self.generate_preview_btn)
             else:
-                self.worker.finished.connect(lambda img: self.on_highres_generated(img, "Generate High-Res Image"))
                 error_handler = lambda err: self.on_fractal_error(err, "Generate High-Res Image", self.generate_highres_btn)
 
+            self.worker.finished.connect(lambda img: self.on_image_generated(img, is_low_res))
             self.worker.error.connect(error_handler)
             self.worker.start()
-            
+
         except Exception as e:
             self.show_error(str(e))
 
-    def on_preview_generated(self, img_array):
-        """Handle successful low-res preview generation"""
-        try:
-            # Convert numpy array to PIL Image
-            img = Image.fromarray(np.swapaxes(img_array.astype(np.uint8), 0, 1))
-            
+    def on_image_generated(self, img_array, is_low_res):
+        # Convert numpy array to PIL Image
+        img = Image.fromarray(np.swapaxes(img_array.astype(np.uint8), 0, 1))
+
+        if is_low_res:
             # Store fractal instance for real-time zooming
             params, z_value = self.get_fractal_params(is_low_res=True)
             self.current_fractal = ComputeFractals(**params)
-            
             # Enter real-time mode
             self.real_time_mode = True
-            
-            self.display_image(img)
-            
-        except Exception as e:
-            self.show_error(f"Error displaying preview: {e}")
-        
-        finally:
             # Update button to show exit option
             self.generate_preview_btn.setText("Exit Real-Time Mode")
             self.generate_preview_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 10px; }")
             self.generate_preview_btn.setEnabled(True)
-    
-    def on_highres_generated(self, img_array, original_text):
-        try:
-            # Convert numpy array to PIL Image
-            img = Image.fromarray(np.swapaxes(img_array.astype(np.uint8), 0, 1))
+
+        else:
             self.current_high_res_image = img
-            
-            # Display the high-res image (replaces any current display)
-            self.display_image(img)
-            
             # Exit real-time mode since we're now showing high-res
             if self.real_time_mode:
                 self.real_time_mode = False
                 self.current_fractal = None
                 self.generate_preview_btn.setText("Start Real-Time Generation")
                 self.generate_preview_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 10px; }")
-
-        except Exception as e:
-            self.show_error(f"Error generating high-res image: {e}")
-        
-        finally:
+            
             # Re-enable generate button
-            self.generate_highres_btn.setText(original_text)
+            self.generate_highres_btn.setText("Generate High-Res Image")
             self.generate_highres_btn.setEnabled(True)
-    
+        self.display_image(img)
+
+
     def on_fractal_error(self, error_msg, original_text, button):
         """Handle fractal generation error"""
         self.show_error(error_msg)

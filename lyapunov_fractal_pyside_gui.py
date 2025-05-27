@@ -265,21 +265,27 @@ class FractalApp(QMainWindow):
         # Real-time generation button
         self.generate_preview_btn = QPushButton("Start Real-Time Generation")
         self.generate_preview_btn.clicked.connect(self.toggle_real_time_mode)
-        self.generate_preview_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 10px; }")
+        self.generate_preview_btn.setStyleSheet(
+            "QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 10px; }"
+        )
         layout.addWidget(self.generate_preview_btn)
         
         # Generate high-res button
         self.generate_highres_btn = QPushButton("Generate High-Res Image")
-        self.generate_highres_btn.clicked.connect(self.generate_high_res_image)
-        self.generate_highres_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }")
+        self.generate_highres_btn.clicked.connect(lambda _: self.generate_image(is_low_res=False))
+        self.generate_highres_btn.setStyleSheet(
+            "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }"
+        )
         layout.addWidget(self.generate_highres_btn)
         
         # Save button (for high-res images only)
         self.save_btn = QPushButton("Save High-Res Image")
         self.save_btn.clicked.connect(self.save_image)
-        self.save_btn.setStyleSheet("QPushButton { background-color: #FF9800; color: white; padding: 8px; }")
+        self.save_btn.setStyleSheet(
+            "QPushButton { background-color: #FF9800; color: white; padding: 8px; }"
+        )
         layout.addWidget(self.save_btn)
-    
+
     # Correct bounds to ensure min < max
     def sanitize_inputs(self, changed_field):
         try:
@@ -304,8 +310,8 @@ class FractalApp(QMainWindow):
             # Ignore invalid number formats (let user continue typing)
             pass
 
+    # Handle parameter changes by regenerating the fractal if in real-time mode
     def on_parameter_changed(self, changed_field=None):
-        """Handle parameter changes by regenerating the fractal if in real-time mode"""
         self.sanitize_inputs(changed_field)
 
         if self.real_time_mode and self.current_fractal:
@@ -377,7 +383,7 @@ class FractalApp(QMainWindow):
         """Toggle between real-time mode and static display"""
         if not self.real_time_mode:
             # Enter real-time mode
-            self.generate_low_res_preview()
+            self.generate_image(is_low_res=True)
         else:
             # Exit real-time mode
             self.exit_real_time_mode()
@@ -399,43 +405,30 @@ class FractalApp(QMainWindow):
         self.generate_preview_btn.setText("Start Real-Time Generation")
         self.generate_preview_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 10px; }")
     
-    def generate_low_res_preview(self):
-        """Generate low-resolution preview for real-time zooming"""
+    # Generate low-resolution image for zooming in real time
+    def generate_image(self, is_low_res):
         try:
-            params, z_value = self.get_fractal_params(is_low_res=True)
+            params, z_value = self.get_fractal_params(is_low_res=is_low_res)
             
             # Update button state
             self.generate_preview_btn.setText("Generating...")
             self.generate_preview_btn.setEnabled(False)
-            
+
             # Start worker thread
             self.worker = FractalWorker(params, z_value)
-            self.worker.finished.connect(self.on_preview_generated)
-            self.worker.error.connect(lambda err: self.on_fractal_error(err, "Start Real-Time Generation", self.generate_preview_btn))
+            if is_low_res:
+                self.worker.finished.connect(self.on_preview_generated)
+                error_handler = lambda err: self.on_fractal_error(err, "Start Real-Time Generation", self.generate_preview_btn)
+            else:
+                self.worker.finished.connect(lambda img: self.on_highres_generated(img, "Generate High-Res Image"))
+                error_handler = lambda err: self.on_fractal_error(err, "Generate High-Res Image", self.generate_highres_btn)
+
+            self.worker.error.connect(error_handler)
             self.worker.start()
             
         except Exception as e:
             self.show_error(str(e))
-    
-    def generate_high_res_image(self):
-        """Generate high-resolution image for display and saving"""
-        try:
-            params, z_value = self.get_fractal_params(is_low_res=False)
-            
-            # Update button state
-            original_text = self.generate_highres_btn.text()
-            self.generate_highres_btn.setText("Generating High-Res...")
-            self.generate_highres_btn.setEnabled(False)
-            
-            # Start worker thread
-            self.worker = FractalWorker(params, z_value)
-            self.worker.finished.connect(lambda img: self.on_highres_generated(img, original_text))
-            self.worker.error.connect(lambda err: self.on_fractal_error(err, original_text, self.generate_highres_btn))
-            self.worker.start()
-            
-        except Exception as e:
-            self.show_error(str(e))
-    
+
     def on_preview_generated(self, img_array):
         """Handle successful low-res preview generation"""
         try:
@@ -461,7 +454,6 @@ class FractalApp(QMainWindow):
             self.generate_preview_btn.setEnabled(True)
     
     def on_highres_generated(self, img_array, original_text):
-        """Handle successful high-res image generation"""
         try:
             # Convert numpy array to PIL Image
             img = Image.fromarray(np.swapaxes(img_array.astype(np.uint8), 0, 1))

@@ -161,11 +161,11 @@ class FractalApp(QMainWindow):
         
         for i, (key, (label_text, default_value)) in enumerate(coords_fields.items(), 1):
             spin_box = QDoubleSpinBox()
-            spin_box.setValue(default_value)
-            spin_box.setDecimals(5)
-            spin_box.valueChanged.connect(lambda text, field=key: self.on_parameter_changed(field))
-            
             spin_box.setRange(0, 4)
+            spin_box.setDecimals(5)
+            spin_box.setSingleStep(0.1)
+            spin_box.setValue(default_value)
+            spin_box.valueChanged.connect(lambda text, field=key: self.on_parameter_changed(field))
 
             grid_layout.addWidget(QLabel(label_text), i, 0)
             grid_layout.addWidget(spin_box, i, 1)
@@ -173,16 +173,17 @@ class FractalApp(QMainWindow):
             self.inputs[key] = spin_box
 
         # add color resolution right after y_max
-        color_res_label = QLabel("Color Resolution")
-        self.color_resolution = QSpinBox()
-        self.color_resolution.setRange(100, 10000)
-        self.color_resolution.setValue(1900)
-        self.color_resolution.setKeyboardTracking(False)  # only emit signal when editing is finished
-        self.color_resolution.valueChanged.connect(self.on_parameter_changed)
+        color_resolution = QSpinBox()
+        color_resolution.setRange(50, 10000)
+        color_resolution.setSingleStep(50)
+        color_resolution.setValue(1900)
+        color_resolution.valueChanged.connect(self.on_parameter_changed)
+
+        grid_layout.addWidget(QLabel("Color Resolution"), 6, 0)
+        grid_layout.addWidget(color_resolution, 6, 1)
         
-        grid_layout.addWidget(color_res_label, 6, 0)
-        grid_layout.addWidget(self.color_resolution, 6, 1)
-        
+        self.inputs["color_resolution"] = color_resolution
+
         layout.addLayout(grid_layout)
 
     def create_resolution_settings(self, layout):
@@ -372,7 +373,7 @@ class FractalApp(QMainWindow):
             'y_min': self.inputs['y_min'].value(),
             'y_max': self.inputs['y_max'].value(),
             'size': size,
-            'color_resolution': self.color_resolution.value(),
+            'color_resolution': self.inputs['color_resolution'].value(),
             'num_iter': iterations,
             'colors': colors
         }

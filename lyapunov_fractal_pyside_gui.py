@@ -4,7 +4,8 @@ from PIL import Image
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QHBoxLayout, QGridLayout, QLabel, QLineEdit, QDoubleSpinBox,
                                QPushButton, QColorDialog, QMessageBox, QScrollArea,
-                               QGroupBox, QSpinBox)
+                               QGroupBox, QSpinBox, QFileDialog)
+
 from PySide6.QtCore import Qt, QThread, Signal, QTimer
 from PySide6.QtGui import QPixmap, QImage, QRegularExpressionValidator
 from numba.cuda import get_current_device
@@ -529,33 +530,28 @@ class FractalApp(QMainWindow):
         
         return new_x_min, new_x_max, new_y_min, new_y_max
 
+    # save the current high resolution image
     def save_image(self):
-        """Save the current high-resolution image"""
         if self.current_high_res_image:
-            try:
-                from PySide6.QtWidgets import QFileDialog
-                
+            try:                
                 file_path, _ = QFileDialog.getSaveFileName(
-                    self, 
-                    "Save High-Res Fractal Image", 
-                    "fractal_highres.png", 
+                    self,
+                    "Save High-Res Fractal Image",
+                    "fractal_highres.png",
                     "PNG Files (*.png);;JPEG Files (*.jpg);;All Files (*)"
                 )
-                
+
                 if file_path:
                     img = Image.fromarray(np.swapaxes(self.current_high_res_image.astype(np.uint8), 0, 1))
                     img.save(file_path)
                     QMessageBox.information(self, "Success", f"High-resolution image saved to {file_path}")
 
             except Exception as e:
-                self.show_error(f"Error saving image: {e}")
-
-    def show_error(self, message):
-        msg_box = QMessageBox()
-        msg_box.setIcon(QMessageBox.Critical)
-        msg_box.setWindowTitle("Error")
-        msg_box.setText(message)
-        msg_box.exec()
+                msg_box = QMessageBox()
+                msg_box.setIcon(QMessageBox.Critical)
+                msg_box.setWindowTitle("Error")
+                msg_box.setText(f"Error saving image: {e}")
+                msg_box.exec()
 
     def closeEvent(self, event):
         if self.worker and self.worker.isRunning():

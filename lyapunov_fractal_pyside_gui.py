@@ -29,7 +29,6 @@ def make_dspinbox(value, singleStep, minimum, maximum, decimals):
 # worker thread to avoid blocking the GUI
 class FractalWorker(QThread):
     finished = Signal(np.ndarray)
-    error = Signal(str)
     
     def __init__(self, fractal_params, z_value):
         super().__init__()
@@ -416,13 +415,7 @@ class FractalApp(QMainWindow):
 
             # Start worker thread
             self.worker = FractalWorker(params, z_value)
-            if is_low_res:
-                error_handler = lambda err: self.on_fractal_error(err, "Start Real-Time Generation", self.generate_preview_btn)
-            else:
-                error_handler = lambda err: self.on_fractal_error(err, "Generate High-Res Image", self.generate_highres_btn)
-
             self.worker.finished.connect(lambda img: self.on_image_generated(img, is_low_res))
-            self.worker.error.connect(error_handler)
             self.worker.start()
 
         except Exception as e:
@@ -457,17 +450,7 @@ class FractalApp(QMainWindow):
             self.generate_highres_btn.setEnabled(True)
         self.display_image(img)
 
-
-    def on_fractal_error(self, error_msg, original_text, button):
-        """Handle fractal generation error"""
-        self.show_error(error_msg)
-        
-        # Re-enable generate button
-        button.setText(original_text)
-        button.setEnabled(True)
-    
     def display_image(self, img):
-        """Display PIL image in the label"""
         # Convert PIL image to QPixmap
         img_resized = img.copy()
         img_resized.thumbnail((600, 600))

@@ -163,7 +163,7 @@ class FractalApp(QMainWindow):
             grid_layout.addWidget(label, i, 0)
             grid_layout.addWidget(line_edit, i, 1)
             
-            self.inputs[key] = line_edit
+            self.inputs[key] = line_edit.text()
 
         # add color resolution right after y_max
         color_res_label = QLabel("Color Resolution")
@@ -332,18 +332,18 @@ class FractalApp(QMainWindow):
             iterations = self.high_res_iter.value()
         
         params = {
-            'pattern': self.inputs['pattern'].text().strip(),
-            'x_min': float(self.inputs['x_min'].text()),
-            'x_max': float(self.inputs['x_max'].text()),
-            'y_min': float(self.inputs['y_min'].text()),
-            'y_max': float(self.inputs['y_max'].text()),
+            'pattern': self.inputs['pattern'].strip(),
+            'x_min': float(self.inputs['x_min']),
+            'x_max': float(self.inputs['x_max']),
+            'y_min': float(self.inputs['y_min']),
+            'y_max': float(self.inputs['y_max']),
             'size': size,
             'color_resolution': self.color_resolution.value(),
             'num_iter': iterations,
             'colors': colors
         }
         
-        z_value = float(self.inputs['z'].text())
+        z_value = float(self.inputs['z'])
         
         return params, z_value
 
@@ -484,15 +484,15 @@ class FractalApp(QMainWindow):
     
     # convert mouse position ratios to fractal coordinates
     def get_mouse_coords_in_region(self, pos_x_ratio, pos_y_ratio):
-        x_min = float(self.inputs['x_min'].text())
-        x_max = float(self.inputs['x_max'].text())
-        y_min = float(self.inputs['y_min'].text())
-        y_max = float(self.inputs['y_max'].text())
-        
+        x_min = float(self.inputs['x_min'])
+        x_max = float(self.inputs['x_max'])
+        y_min = float(self.inputs['y_min'])
+        y_max = float(self.inputs['y_max'])
+
         pos_x = x_min + (x_max - x_min) * pos_x_ratio
         # we flip the y axis because it is pointing downwards
         pos_y = y_min + (y_max - y_min) * (1 - pos_y_ratio)
-        
+
         return pos_x, pos_y
     
     def center_zoom(self, pos_x_ratio, pos_y_ratio, coef):
@@ -503,10 +503,10 @@ class FractalApp(QMainWindow):
     
     # calculate new region bounds after zoom
     def zoom_to(self, pos, zoom_proportion):
-        x_min = float(self.inputs['x_min'].text())
-        x_max = float(self.inputs['x_max'].text())
-        y_min = float(self.inputs['y_min'].text())
-        y_max = float(self.inputs['y_max'].text())
+        x_min = float(self.inputs['x_min'])
+        x_max = float(self.inputs['x_max'])
+        y_min = float(self.inputs['y_min'])
+        y_max = float(self.inputs['y_max'])
         
         new_x_min = pos[0] - (zoom_proportion * (x_max - x_min)) / 2
         new_y_min = pos[1] - (zoom_proportion * (y_max - y_min)) / 2
@@ -550,14 +550,14 @@ class FractalApp(QMainWindow):
         new_bounds = self.zoom_to(mouse_coords, zoom_proportion)
 
         # Update input fields
-        self.inputs['x_min'].setText(f"{new_bounds[0]:.6f}")
-        self.inputs['x_max'].setText(f"{new_bounds[1]:.6f}")
-        self.inputs['y_min'].setText(f"{new_bounds[2]:.6f}")
-        self.inputs['y_max'].setText(f"{new_bounds[3]:.6f}")
+        self.inputs['x_min'] = new_bounds[0]
+        self.inputs['x_max'] = new_bounds[1]
+        self.inputs['y_min'] = new_bounds[2]
+        self.inputs['y_max'] = new_bounds[3]
         
         # Update fractal region and generate new image quickly
         self.current_fractal.set_region(*new_bounds)
-        z_value = float(self.inputs['z'].text())
+        z_value = float(self.inputs['z'])
         img_array = self.current_fractal.compute_fractal(z_value)
         
         # Display immediately

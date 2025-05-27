@@ -11,6 +11,20 @@ from numba.cuda import get_current_device
 from lyapunov_core import ComputeFractals
 from utils import valid_hex_string
 
+def make_spinbox(value, singleStep, minimum, maximum):
+    box = QSpinBox()
+    box.setRange(minimum, maximum)
+    box.setSingleStep(singleStep)
+    box.setValue(value)
+    return box
+
+def make_dspinbox(value, singleStep, minimum, maximum, decimals):
+    box = QDoubleSpinBox()
+    box.setRange(minimum, maximum)
+    box.setDecimals(decimals)
+    box.setSingleStep(singleStep)
+    box.setValue(value)
+    return box
 
 # worker thread to avoid blocking the GUI
 class FractalWorker(QThread):
@@ -118,7 +132,7 @@ class FractalApp(QMainWindow):
         left_panel.setMaximumWidth(350)
         left_layout = QVBoxLayout(left_panel)
         
-        self.create_input_fields(left_layout)
+        self.create_top_fields(left_layout)
         
         self.create_resolution_settings(left_layout)
         
@@ -142,8 +156,8 @@ class FractalApp(QMainWindow):
         # Add panels to main layout
         main_layout.addWidget(left_panel)
         main_layout.addWidget(scroll_area, 1)  # Stretch factor 1 for fractal display
-        
-    def create_input_fields(self, layout):
+
+    def create_top_fields(self, layout):
         # Create grid layout for input fields
         grid_layout = QGridLayout()
         
@@ -162,11 +176,7 @@ class FractalApp(QMainWindow):
         grid_layout.addWidget(self.pattern, 0, 1)
 
         for i, (field_name, (label_text, default_value)) in enumerate(coords_fields.items(), 1):
-            spin_box = QDoubleSpinBox()
-            spin_box.setRange(0, 4)
-            spin_box.setDecimals(5)
-            spin_box.setSingleStep(0.1)
-            spin_box.setValue(default_value)
+            spin_box = make_dspinbox(value=default_value, singleStep=0.1,  minimum=0, maximum=4, decimals=5)
             spin_box.valueChanged.connect(lambda val, field=spin_box: self.on_parameter_changed(field))
 
             setattr(self, field_name, spin_box)
@@ -174,10 +184,7 @@ class FractalApp(QMainWindow):
             grid_layout.addWidget(QLabel(label_text), i, 0)
             grid_layout.addWidget(spin_box, i, 1)
 
-        self.color_res = QSpinBox()
-        self.color_res.setRange(50, 10000)
-        self.color_res.setSingleStep(50)
-        self.color_res.setValue(1900)
+        self.color_res = make_spinbox(value=1900, singleStep=50, minimum=50, maximum=10_000)
         self.color_res.valueChanged.connect(self.on_parameter_changed)
 
         grid_layout.addWidget(QLabel("Color Resolution"), 6, 0)
@@ -194,17 +201,13 @@ class FractalApp(QMainWindow):
         res_layout.addWidget(realtime_label, 0, 0, 1, 2)
         
         res_layout.addWidget(QLabel("Size:"), 1, 0)
-        self.low_res_size = QSpinBox()
-        self.low_res_size.setRange(100, 1500)
-        self.low_res_size.setValue(300)
+        self.low_res_size = make_spinbox(value=300, singleStep=50, minimum=100, maximum=1500)
         self.low_res_size.setKeyboardTracking(False)
         self.low_res_size.valueChanged.connect(self.on_parameter_changed)
         res_layout.addWidget(self.low_res_size, 1, 1)
 
         res_layout.addWidget(QLabel("Iterations:"), 2, 0)
-        self.low_res_iter = QSpinBox()
-        self.low_res_iter.setRange(50, 5000)
-        self.low_res_iter.setValue(200)
+        self.low_res_iter = make_spinbox(value=200, singleStep=50, minimum=50, maximum=5000)
         self.low_res_iter.setKeyboardTracking(False)
         self.low_res_iter.valueChanged.connect(self.on_parameter_changed)
         res_layout.addWidget(self.low_res_iter, 2, 1)
@@ -214,19 +217,14 @@ class FractalApp(QMainWindow):
         res_layout.addWidget(high_res_label, 3, 0, 1, 2)
         
         res_layout.addWidget(QLabel("Size:"), 4, 0)
-        self.high_res_size = QSpinBox()
-        self.high_res_size.setRange(500, self.max_image_size)
-        self.high_res_size.setValue(min(1200, self.max_image_size))
+        self.high_res_size = make_spinbox(value=min(1200, self.max_image_size), singleStep=50,
+                                          minimum=500, maximum=self.max_image_size)
         self.high_res_size.setKeyboardTracking(False)
-        # High-res settings don't need auto-regeneration as they're for explicit high-res generation
         res_layout.addWidget(self.high_res_size, 4, 1)
         
         res_layout.addWidget(QLabel("Iterations:"), 5, 0)
-        self.high_res_iter = QSpinBox()
-        self.high_res_iter.setRange(500, 50000)
-        self.high_res_iter.setValue(2000)
+        self.high_res_iter = make_spinbox(value=2000, singleStep=50, minimum=500, maximum=50_000)
         self.high_res_iter.setKeyboardTracking(False)
-        # High-res settings don't need auto-regeneration as they're for explicit high-res generation
         res_layout.addWidget(self.high_res_iter, 5, 1)
         
         layout.addWidget(res_group)

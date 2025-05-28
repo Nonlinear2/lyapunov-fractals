@@ -40,7 +40,7 @@ class Config:
 # worker thread to avoid blocking the GUI
 class FractalWorker(QThread):
     finished = Signal(np.ndarray)
-    
+
     def __init__(self, fractal_params, z_value):
         super().__init__()
         self.fractal_params = fractal_params
@@ -293,6 +293,13 @@ class FractalApp(QMainWindow):
         self.save_btn.setStyleSheet(self.SAVE_BTN_STYLE)
         layout.addWidget(self.save_btn)
 
+    def pick_color(self, index):
+        color = QColorDialog.getColor()
+        
+        if color.isValid():
+            self.color_inputs[index].setText(color.name())
+            # The textChanged signal will automatically trigger regeneration
+
     # Correct bounds to ensure min < max
     def sanitize_inputs(self, changed_field):
         x_min = self.x_min.value()
@@ -321,14 +328,6 @@ class FractalApp(QMainWindow):
             self.regeneration_timer.stop()
             self.regeneration_timer.start(Config.REGENERATION_DELAY)
 
-    def pick_color(self, index):
-        color = QColorDialog.getColor()
-        
-        if color.isValid():
-            hex_color = color.name()
-            self.color_inputs[index].setText(hex_color)
-            # The textChanged signal will automatically trigger regeneration
-    
     # extract parameters from GUI fields
     def get_fractal_params(self, is_low_res=True):
         colors = []
@@ -374,7 +373,7 @@ class FractalApp(QMainWindow):
             # Clear the display
             self.fractal_label.clear()
             self.fractal_label.setText(
-                "Start Real-Time Generation first, then left-click to zoom in, right-click to zoom out"
+                "Start real time generation first, then hold left mouse to zoom in, right mouse to zoom out"
             )
             
             # Update button text
@@ -406,7 +405,6 @@ class FractalApp(QMainWindow):
         self.worker.start()
 
     def on_image_generated(self, img, is_low_res):
-
         if is_low_res:
             # Store fractal instance for real-time zooming
             params, z_value = self.get_fractal_params(is_low_res=True)
@@ -421,7 +419,6 @@ class FractalApp(QMainWindow):
         self.display_image(img)
 
     def display_image(self, img):
-        
         img = np.ascontiguousarray(np.swapaxes(img.astype(np.uint8), 0, 1))
         qimg = QImage(img.data, img.shape[1], img.shape[0], img.strides[0], QImage.Format_RGB888)
         
@@ -446,7 +443,6 @@ class FractalApp(QMainWindow):
         self.current_fractal.set_region(*new_bounds)
         img = self.current_fractal.compute_fractal(self.z.value())
 
-        # Display immediately
         self.display_image(img)
     
     # calculate new region bounds after zoom

@@ -391,6 +391,9 @@ class FractalApp(QMainWindow):
             self.start_image_gen(is_low_res=True)
 
     def start_image_gen(self, is_low_res):
+        if self.worker and self.worker.isRunning():
+            return
+
         params, z_value = self.get_fractal_params(is_low_res=is_low_res)
 
         if not is_low_res and self.real_time_mode:
@@ -439,11 +442,7 @@ class FractalApp(QMainWindow):
         self.y_min.setValue(new_bounds[2])
         self.y_max.setValue(new_bounds[3])
 
-        # Update fractal region and generate new image quickly
-        self.current_fractal.set_region(*new_bounds)
-        img = self.current_fractal.compute_fractal(self.z.value())
-
-        self.display_image(img)
+        self.start_image_gen(is_low_res=True)
     
     # calculate new region bounds after zoom
     def zoom_to(self, x_ratio, y_ratio, zoom_proportion):

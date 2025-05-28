@@ -114,7 +114,6 @@ class FractalApp(QMainWindow):
         # Initialize variables
         self.current_high_res_image = None
         self.worker = None
-        self.current_fractal = None  # Store current fractal instance for real-time mode
         self.real_time_mode = False  # Track current mode
 
         self.z = None
@@ -327,7 +326,7 @@ class FractalApp(QMainWindow):
         # determined the changed field by the sender
         self.sanitize_inputs(self.sender())
 
-        if self.real_time_mode and self.current_fractal:
+        if self.real_time_mode:
             self.regeneration_timer.stop()
             self.regeneration_timer.start(Config.REGENERATION_DELAY)
 
@@ -367,7 +366,6 @@ class FractalApp(QMainWindow):
     def toggle_real_time_mode(self):
         if self.real_time_mode:
             self.real_time_mode = False
-            self.current_fractal = None
 
             # Stop any pending regeneration timer
             self.regeneration_timer.stop()
@@ -398,7 +396,6 @@ class FractalApp(QMainWindow):
 
         if not is_low_res and self.real_time_mode:
             self.real_time_mode = False
-            self.current_fractal = None
             self.low_res_btn.setText(self.LOW_RES_BTN_TEXT)
             self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
 
@@ -408,12 +405,7 @@ class FractalApp(QMainWindow):
         self.worker.start()
 
     def on_image_generated(self, img, is_low_res):
-        if is_low_res:
-            # Store fractal instance for real-time zooming
-            params, z_value = self.get_fractal_params(is_low_res=True)
-            self.current_fractal = ComputeFractals(**params)
-
-        else:
+        if not is_low_res:
             self.current_high_res_image = img
 
             # Re-enable generate button
@@ -431,7 +423,7 @@ class FractalApp(QMainWindow):
         self.fractal_region.resize(pixmap.size())
 
     def on_zoom(self, x_ratio, y_ratio, zoom_proportion):
-        if not self.current_fractal or not self.real_time_mode:
+        if not self.real_time_mode:
             return
 
         new_bounds = self.zoom_to(x_ratio, y_ratio, zoom_proportion)

@@ -136,7 +136,7 @@ class FractalApp(QMainWindow):
         # timer to debounce fractal generation
         self.regeneration_timer = QTimer()
         self.regeneration_timer.setSingleShot(True)
-        self.regeneration_timer.timeout.connect(lambda _: self.start_image_gen(is_low_res=True))
+        self.regeneration_timer.timeout.connect(lambda: self.start_image_gen(is_low_res=True))
     
         # Initialize UI
         self.init_ui()

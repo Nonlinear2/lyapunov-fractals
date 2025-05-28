@@ -52,7 +52,7 @@ class FractalWorker(QThread):
         self.finished.emit(img_array)
 
 # handle mouse clicks for zooming
-class FractalLabel(QLabel):
+class FractalRegion(QLabel):
     zoom = Signal(float, float, float)
     
     def __init__(self):
@@ -71,7 +71,7 @@ class FractalLabel(QLabel):
         self.zoom_timer.setInterval(Config.ZOOM_TIMER_INTERVAL)
 
     def mousePressEvent(self, event):
-        if self.pixmap() and event.button() in [Qt.LeftButton, Qt.RightButton]:
+        if event.button() in [Qt.LeftButton, Qt.RightButton]:
             # Calculate click position as ratio of fractal canvas
             x_ratio = event.position().x() / self.width()
             y_ratio = event.position().y() / self.height()
@@ -83,8 +83,8 @@ class FractalLabel(QLabel):
                 self.zoom_proportion = 1/Config.ZOOM_FACTOR
 
             self.is_zooming = True
-            self.zoom.emit(x_ratio, y_ratio, self.zoom_proportion)
             self.zoom_timer.start()
+            self.zoom.emit(x_ratio, y_ratio, self.zoom_proportion)
 
     def mouseReleaseEvent(self, event):
         if self.is_zooming:
@@ -92,7 +92,7 @@ class FractalLabel(QLabel):
             self.zoom_timer.stop()
 
     def mouseMoveEvent(self, event):
-        if self.is_zooming and self.pixmap():
+        if self.is_zooming:
             x_ratio = event.position().x() / self.width()
             y_ratio = event.position().y() / self.height()
             self.last_mouse_pos = (x_ratio, y_ratio)
@@ -155,7 +155,7 @@ class FractalApp(QMainWindow):
         left_layout.addStretch()
 
         # Right panel for fractal display
-        self.fractal_label = FractalLabel()
+        self.fractal_label = FractalRegion()
         self.fractal_label.zoom.connect(self.on_zoom)
         
         # Create scroll area for the fractal display

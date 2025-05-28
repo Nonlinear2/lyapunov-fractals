@@ -133,7 +133,7 @@ class FractalApp(QMainWindow):
         # timer to debounce fractal generation
         self.regeneration_timer = QTimer()
         self.regeneration_timer.setSingleShot(True)
-        self.regeneration_timer.timeout.connect(self.regenerate_realtime_fractal)
+        self.regeneration_timer.timeout.connect(lambda _: self.start_image_gen(is_low_res=True))
     
         # Initialize UI
         self.init_ui()
@@ -320,18 +320,6 @@ class FractalApp(QMainWindow):
         if self.real_time_mode and self.current_fractal:
             self.regeneration_timer.stop()
             self.regeneration_timer.start(Config.REGENERATION_DELAY)
-    
-    def regenerate_realtime_fractal(self):
-        if not self.real_time_mode:
-            return
-
-        # Get new parameters and recreate fractal instance
-        params, z_value = self.get_fractal_params(is_low_res=True)
-        self.current_fractal = ComputeFractals(**params)
-        
-        # Generate and display new image
-        img = self.current_fractal.compute_fractal(z_value)
-        self.display_image(img)
 
     def pick_color(self, index):
         color = QColorDialog.getColor()
@@ -405,13 +393,8 @@ class FractalApp(QMainWindow):
 
     def start_image_gen(self, is_low_res):
         params, z_value = self.get_fractal_params(is_low_res=is_low_res)
-        
-        if is_low_res:
-            # Update button state
-            self.low_res_btn.setText("Generating...")
-            self.low_res_btn.setEnabled(False)
 
-        elif self.real_time_mode:
+        if not is_low_res and self.real_time_mode:
             self.real_time_mode = False
             self.current_fractal = None
             self.low_res_btn.setText(self.LOW_RES_BTN_TEXT)

@@ -11,6 +11,7 @@ from PySide6.QtGui import QPixmap, QImage, QRegularExpressionValidator
 from numba.cuda import get_current_device
 from lyapunov_core import ComputeFractals
 from utils import valid_hex_string
+from dataclasses import dataclass
 
 def make_spinbox(value, singleStep, minimum, maximum):
     box = QSpinBox()
@@ -26,6 +27,15 @@ def make_dspinbox(value, singleStep, minimum, maximum, decimals):
     box.setSingleStep(singleStep)
     box.setValue(value)
     return box
+
+@dataclass
+class Config:
+    MIN_FRACTAL_REGION_SIZE = (600, 600)
+    APP_MIN_SIZE = (1100, 800)
+    ZOOM_FACTOR = 0.98
+    ZOOM_TIMER_INTERVAL = 100
+    REGENERATION_DELAY = 300
+    DEFAULT_COLORS = ["#000000", "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"]
 
 # worker thread to avoid blocking the GUI
 class FractalWorker(QThread):
@@ -47,7 +57,7 @@ class FractalLabel(QLabel):
     
     def __init__(self):
         super().__init__()
-        self.setMinimumSize(600, 600)
+        self.setMinimumSize(*Config.MIN_FRACTAL_REGION_SIZE)
         self.setStyleSheet("background-color: black;")
         self.setAlignment(Qt.AlignCenter)
         self.setText("Start real time generation first, then hold left mouse to zoom in, right mouse to zoom out")
@@ -58,7 +68,7 @@ class FractalLabel(QLabel):
 
         self.zoom_timer = QTimer()
         self.zoom_timer.timeout.connect(self.continuous_zoom)
-        self.zoom_timer.setInterval(100)  # zoom every 100ms
+        self.zoom_timer.setInterval(Config.ZOOM_TIMER_INTERVAL)
 
     def mousePressEvent(self, event):
         if self.pixmap():
@@ -71,10 +81,10 @@ class FractalLabel(QLabel):
                 self.is_zooming = True
                 if (event.button() == Qt.LeftButton):
                     # zoom in
-                    self.zoom_proportion = 0.98
+                    self.zoom_proportion = Config.ZOOM_FACTOR
                 else:
                     # zoom out
-                    self.zoom_proportion = 1/0.98
+                    self.zoom_proportion = 1/Config.ZOOM_FACTOR
 
                 self.zoom.emit(x_ratio, y_ratio, self.zoom_proportion)
                 self.zoom_timer.start()
@@ -100,7 +110,7 @@ class FractalApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Lyapunov Fractal Generator")
-        self.setMinimumSize(1100, 800)
+        self.setMinimumSize(*Config.APP_MIN_SIZE)
 
         # Initialize variables
         self.current_high_res_image = None
@@ -242,12 +252,10 @@ class FractalApp(QMainWindow):
         self.color_inputs = []
         self.color_buttons = []
         
-        default_colors = ["#000000", "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"]
-        
         for i in range(6):
             color_row_layout = QHBoxLayout()
             
-            color_input = QLineEdit(default_colors[i])
+            color_input = QLineEdit(Config.DEFAULT_COLORS[i])
             color_input.setMaximumWidth(80)
             color_input.setValidator(QRegularExpressionValidator("^#[0-9A-Fa-f]{6}$"))
             color_input.textChanged.connect(self.on_parameter_changed)
@@ -322,7 +330,7 @@ class FractalApp(QMainWindow):
             
             # Reset the timer - this debounces rapid changes
             self.regeneration_timer.stop()
-            self.regeneration_timer.start(300)  # Wait 300ms after last change
+            self.regeneration_timer.start(Config.REGENERATION_DELAY)
     
     def regenerate_realtime_fractal(self):
         if not self.real_time_mode:

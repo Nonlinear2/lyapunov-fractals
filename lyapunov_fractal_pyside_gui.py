@@ -57,11 +57,14 @@ class FractalRegion(QLabel):
     
     def __init__(self):
         super().__init__()
+        self.BACKGROUND_TEXT = \
+            "Start real time generation first, then hold left mouse to zoom in, right mouse to zoom out"
+
         self.setMinimumSize(*Config.MIN_FRACTAL_REGION_SIZE)
         self.setStyleSheet("background-color: black;")
         self.setAlignment(Qt.AlignCenter)
-        self.setText("Start real time generation first, then hold left mouse to zoom in, right mouse to zoom out")
-        
+        self.setText(self.BACKGROUND_TEXT)
+
         self.is_zooming = False
         self.zoom_type = None
         self.last_mouse_pos = None
@@ -160,12 +163,12 @@ class FractalApp(QMainWindow):
         left_layout.addStretch()
 
         # Right panel for fractal display
-        self.fractal_label = FractalRegion()
-        self.fractal_label.zoom.connect(self.on_zoom)
+        self.fractal_region = FractalRegion()
+        self.fractal_region.zoom.connect(self.on_zoom)
         
         # Create scroll area for the fractal display
         scroll_area = QScrollArea()
-        scroll_area.setWidget(self.fractal_label)
+        scroll_area.setWidget(self.fractal_region)
         scroll_area.setWidgetResizable(True)
         
         # Add panels to main layout
@@ -367,15 +370,12 @@ class FractalApp(QMainWindow):
             self.current_fractal = None
 
             # Stop any pending regeneration timer
-            if hasattr(self, 'regeneration_timer'):
-                self.regeneration_timer.stop()
-            
+            self.regeneration_timer.stop()
+
             # Clear the display
-            self.fractal_label.clear()
-            self.fractal_label.setText(
-                "Start real time generation first, then hold left mouse to zoom in, right mouse to zoom out"
-            )
-            
+            self.fractal_region.clear()
+            self.fractal_region.setText(self.fractal_region.BACKGROUND_TEXT)
+
             # Update button text
             self.low_res_btn.setText(self.LOW_RES_BTN_TEXT)
             self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
@@ -424,8 +424,8 @@ class FractalApp(QMainWindow):
         
         # Convert to QPixmap and display
         pixmap = QPixmap.fromImage(qimg)
-        self.fractal_label.setPixmap(pixmap)
-        self.fractal_label.resize(pixmap.size())
+        self.fractal_region.setPixmap(pixmap)
+        self.fractal_region.resize(pixmap.size())
 
     def on_zoom(self, x_ratio, y_ratio, zoom_proportion):
         if not self.current_fractal or not self.real_time_mode:

@@ -341,8 +341,7 @@ class FractalApp(QMainWindow):
         self.current_fractal = ComputeFractals(**params)
         
         # Generate and display new image
-        img_array = self.current_fractal.compute_fractal(z_value)
-        img = Image.fromarray(np.swapaxes(img_array.astype(np.uint8), 0, 1))
+        img = self.current_fractal.compute_fractal(z_value)
         self.display_image(img)
 
     def pick_color(self, index):

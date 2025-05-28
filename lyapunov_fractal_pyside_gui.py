@@ -120,12 +120,12 @@ class FractalApp(QMainWindow):
         self.y_min = None
         self.y_max = None
 
-        self.low_res_btn_text = "Start Real-Time Generation"
-        self.low_res_btn_style = "QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 10px; }"     
-        self.high_res_btn_text = "Generate High-Res Image"
-        self.high_res_btn_style = "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }"
-        self.save_btn_text = "Save High-Res Image"
-        self.save_btn_style = "QPushButton { background-color: #FF9800; color: white; padding: 8px; }"
+        self.LOW_RES_BTN_TEXT = "Start Real-Time Generation"
+        self.LOW_RES_BTN_STYLE = "QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 10px; }"     
+        self.HIGH_REST_BTN_TEXT = "Generate High-Res Image"
+        self.HIGH_RES_BTN_STYLE = "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }"
+        self.SAVE_BTN_TEXT = "Save High-Res Image"
+        self.SAVE_BTN_STYLE = "QPushButton { background-color: #FF9800; color: white; padding: 8px; }"
 
         gpu = get_current_device()
         self.max_image_size = (gpu.MAX_GRID_DIM_X * gpu.MAX_THREADS_PER_BLOCK)**0.5
@@ -271,46 +271,41 @@ class FractalApp(QMainWindow):
     
     def create_buttons(self, layout):
         # Real-time generation button
-        self.low_res_btn = QPushButton(self.low_res_btn_text)
+        self.low_res_btn = QPushButton(self.LOW_RES_BTN_TEXT)
         self.low_res_btn.clicked.connect(self.toggle_real_time_mode)
-        self.low_res_btn.setStyleSheet(self.low_res_btn_style)
+        self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
         layout.addWidget(self.low_res_btn)
         
         # Generate high-res button
-        self.high_res_btn = QPushButton(self.high_res_btn_text)
+        self.high_res_btn = QPushButton(self.HIGH_REST_BTN_TEXT)
         self.high_res_btn.clicked.connect(lambda _: self.start_image_gen(is_low_res=False))
-        self.high_res_btn.setStyleSheet(self.high_res_btn_style)
+        self.high_res_btn.setStyleSheet(self.HIGH_RES_BTN_STYLE)
         layout.addWidget(self.high_res_btn)
         
         # Save button (for high-res images only)
-        self.save_btn = QPushButton(self.save_btn_text)
+        self.save_btn = QPushButton(self.SAVE_BTN_TEXT)
         self.save_btn.clicked.connect(self.save_image)
-        self.save_btn.setStyleSheet(self.save_btn_style)
+        self.save_btn.setStyleSheet(self.SAVE_BTN_STYLE)
         layout.addWidget(self.save_btn)
 
     # Correct bounds to ensure min < max
     def sanitize_inputs(self, changed_field):
-        try:
-            x_min = self.x_min.value()
-            x_max = self.x_max.value()
-            y_min = self.y_min.value()
-            y_max = self.y_max.value()
+        x_min = self.x_min.value()
+        x_max = self.x_max.value()
+        y_min = self.y_min.value()
+        y_max = self.y_max.value()
 
-            if changed_field == self.x_min and x_min >= x_max:
-                self.x_min.setValue(x_max)
+        if changed_field == self.x_min and x_min >= x_max:
+            self.x_min.setValue(x_max)
 
-            elif changed_field == self.x_max and x_max <= x_min:
-                self.x_max.setValue(x_min)
+        elif changed_field == self.x_max and x_max <= x_min:
+            self.x_max.setValue(x_min)
 
-            if changed_field == self.y_min and y_min >= y_max:
-                self.y_min.setValue(y_max)
+        if changed_field == self.y_min and y_min >= y_max:
+            self.y_min.setValue(y_max)
 
-            elif changed_field == self.y_max and y_max <= y_min:
-                self.y_max.setValue(y_min)
-
-        except ValueError:
-            # Ignore invalid number formats (let user continue typing)
-            pass
+        elif changed_field == self.y_max and y_max <= y_min:
+            self.y_max.setValue(y_min)
 
     # Handle parameter changes by regenerating the fractal if in real-time mode
     def on_parameter_changed(self):
@@ -397,8 +392,8 @@ class FractalApp(QMainWindow):
             )
             
             # Update button text
-            self.low_res_btn.setText(self.low_res_btn_text)
-            self.low_res_btn.setStyleSheet(self.low_res_btn_style)
+            self.low_res_btn.setText(self.LOW_RES_BTN_TEXT)
+            self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
     
         else:
             self.real_time_mode = True
@@ -421,8 +416,8 @@ class FractalApp(QMainWindow):
         elif self.real_time_mode:
             self.real_time_mode = False
             self.current_fractal = None
-            self.low_res_btn.setText(self.low_res_btn_text)
-            self.low_res_btn.setStyleSheet(self.low_res_btn_style)
+            self.low_res_btn.setText(self.LOW_RES_BTN_TEXT)
+            self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
 
         # Start worker thread
         self.worker = FractalWorker(params, z_value)
@@ -440,7 +435,7 @@ class FractalApp(QMainWindow):
             self.current_high_res_image = img
 
             # Re-enable generate button
-            self.high_res_btn.setText(self.high_res_btn_text)
+            self.high_res_btn.setText(self.HIGH_REST_BTN_TEXT)
             self.high_res_btn.setEnabled(True)
         self.display_image(img)
 

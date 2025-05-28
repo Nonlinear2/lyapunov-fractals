@@ -71,23 +71,20 @@ class FractalLabel(QLabel):
         self.zoom_timer.setInterval(Config.ZOOM_TIMER_INTERVAL)
 
     def mousePressEvent(self, event):
-        if self.pixmap():
+        if self.pixmap() and event.button() in [Qt.LeftButton, Qt.RightButton]:
             # Calculate click position as ratio of fractal canvas
             x_ratio = event.position().x() / self.width()
             y_ratio = event.position().y() / self.height()
             self.last_mouse_pos = (x_ratio, y_ratio)
             
-            if event.button() in [Qt.LeftButton, Qt.RightButton]:
-                self.is_zooming = True
-                if (event.button() == Qt.LeftButton):
-                    # zoom in
-                    self.zoom_proportion = Config.ZOOM_FACTOR
-                else:
-                    # zoom out
-                    self.zoom_proportion = 1/Config.ZOOM_FACTOR
+            if event.button() == Qt.LeftButton:
+                self.zoom_proportion = Config.ZOOM_FACTOR
+            else:
+                self.zoom_proportion = 1/Config.ZOOM_FACTOR
 
-                self.zoom.emit(x_ratio, y_ratio, self.zoom_proportion)
-                self.zoom_timer.start()
+            self.is_zooming = True
+            self.zoom.emit(x_ratio, y_ratio, self.zoom_proportion)
+            self.zoom_timer.start()
 
     def mouseReleaseEvent(self, event):
         if self.is_zooming:
@@ -96,7 +93,6 @@ class FractalLabel(QLabel):
 
     def mouseMoveEvent(self, event):
         if self.is_zooming and self.pixmap():
-            # Update mouse position for continuous zooming
             x_ratio = event.position().x() / self.width()
             y_ratio = event.position().y() / self.height()
             self.last_mouse_pos = (x_ratio, y_ratio)

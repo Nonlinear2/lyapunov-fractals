@@ -181,7 +181,7 @@ class FractalApp(QMainWindow):
 
         for i, (field_name, (label_text, default_value)) in enumerate(coords_fields.items(), 1):
             spin_box = make_dspinbox(value=default_value, singleStep=0.1,  minimum=0, maximum=4, decimals=5)
-            spin_box.valueChanged.connect(lambda _: self.on_parameter_changed(spin_box))
+            spin_box.valueChanged.connect(self.on_parameter_changed)
 
             setattr(self, field_name, spin_box)
 
@@ -292,16 +292,16 @@ class FractalApp(QMainWindow):
             y_min = self.y_min.value()
             y_max = self.y_max.value()
 
-            if changed_field == 'x_min' and x_min >= x_max:
+            if changed_field == self.x_min and x_min >= x_max:
                 self.x_min.setValue(x_max)
 
-            elif changed_field == 'x_max' and x_max <= x_min:
+            elif changed_field == self.x_max and x_max <= x_min:
                 self.x_max.setValue(x_min)
 
-            if changed_field == 'y_min' and y_min >= y_max:
+            if changed_field == self.y_min and y_min >= y_max:
                 self.y_min.setValue(y_max)
 
-            elif changed_field == 'y_max' and y_max <= y_min:
+            elif changed_field == self.y_max and y_max <= y_min:
                 self.y_max.setValue(y_min)
 
         except ValueError:
@@ -309,8 +309,9 @@ class FractalApp(QMainWindow):
             pass
 
     # Handle parameter changes by regenerating the fractal if in real-time mode
-    def on_parameter_changed(self, changed_field=None):
-        self.sanitize_inputs(changed_field)
+    def on_parameter_changed(self):
+        # determined the changed field by the sender
+        self.sanitize_inputs(self.sender())
 
         if self.real_time_mode and self.current_fractal:
             # Debounce the regeneration using a timer

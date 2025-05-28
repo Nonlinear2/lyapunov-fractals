@@ -130,6 +130,11 @@ class FractalApp(QMainWindow):
         gpu = get_current_device()
         self.max_image_size = (gpu.MAX_GRID_DIM_X * gpu.MAX_THREADS_PER_BLOCK)**0.5
 
+        # timer to debounce fractal generation
+        self.regeneration_timer = QTimer()
+        self.regeneration_timer.setSingleShot(True)
+        self.regeneration_timer.timeout.connect(self.regenerate_realtime_fractal)
+    
         # Initialize UI
         self.init_ui()
         
@@ -313,13 +318,6 @@ class FractalApp(QMainWindow):
         self.sanitize_inputs(self.sender())
 
         if self.real_time_mode and self.current_fractal:
-            # Debounce the regeneration using a timer
-            if not hasattr(self, 'regeneration_timer'):
-                self.regeneration_timer = QTimer()
-                self.regeneration_timer.setSingleShot(True)
-                self.regeneration_timer.timeout.connect(self.regenerate_realtime_fractal)
-            
-            # Reset the timer - this debounces rapid changes
             self.regeneration_timer.stop()
             self.regeneration_timer.start(Config.REGENERATION_DELAY)
     

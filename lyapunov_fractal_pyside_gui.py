@@ -434,10 +434,7 @@ class FractalApp(QMainWindow):
         if not self.current_fractal or not self.real_time_mode:
             return
 
-        mouse_pos = self.center_zoom(x_ratio, y_ratio, 0.1)
-        mouse_coords = self.get_mouse_coords_in_region(mouse_pos[0], mouse_pos[1])
-
-        new_bounds = self.zoom_to(mouse_coords, zoom_proportion)
+        new_bounds = self.zoom_to(x_ratio, y_ratio, zoom_proportion)
 
         # Update input fields
         self.x_min.setValue(new_bounds[0])
@@ -451,35 +448,26 @@ class FractalApp(QMainWindow):
 
         # Display immediately
         self.display_image(img)
-
-    # convert mouse position ratios to fractal coordinates
-    def get_mouse_coords_in_region(self, pos_x_ratio, pos_y_ratio):
-        x_min = self.x_min.value()
-        x_max = self.x_max.value()
-        y_min = self.y_min.value()
-        y_max = self.y_max.value()
-
-        pos_x = x_min + (x_max - x_min) * pos_x_ratio
-        # we flip the y axis because it is pointing downwards
-        pos_y = y_min + (y_max - y_min) * (1 - pos_y_ratio)
-        
-        return pos_x, pos_y
-    
-    def center_zoom(self, pos_x_ratio, pos_y_ratio, coef):
-        size = self.low_res_size.value()
-        new_pos_x = coef * (pos_x_ratio * size - size/2) + size/2
-        new_pos_y = coef * (pos_y_ratio * size - size/2) + size/2
-        return (new_pos_x / size, new_pos_y / size)
     
     # calculate new region bounds after zoom
-    def zoom_to(self, pos, zoom_proportion):
+    def zoom_to(self, x_ratio, y_ratio, zoom_proportion):
         x_min = self.x_min.value()
         x_max = self.x_max.value()
         y_min = self.y_min.value()
         y_max = self.y_max.value()
 
-        new_x_min = pos[0] - (zoom_proportion * (x_max - x_min)) / 2
-        new_y_min = pos[1] - (zoom_proportion * (y_max - y_min)) / 2
+        # center zoom
+        size = self.low_res_size.value()
+        pos_x = 0.1 * (x_ratio * size - size/2) + size/2
+        pos_y = 0.1 * (y_ratio * size - size/2) + size/2
+
+        # convert mouse position ratios to fractal coordinates
+        pos_x = x_min + (x_max - x_min) * pos_x/size
+        # we flip the y axis because it is pointing downwards
+        pos_y = y_min + (y_max - y_min) * (1 - pos_y/size)
+
+        new_x_min = pos_x - (zoom_proportion * (x_max - x_min)) / 2
+        new_y_min = pos_y - (zoom_proportion * (y_max - y_min)) / 2
         new_x_max = new_x_min + zoom_proportion * (x_max - x_min)
         new_y_max = new_y_min + zoom_proportion * (y_max - y_min)
         

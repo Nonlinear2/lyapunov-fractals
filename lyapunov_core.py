@@ -45,16 +45,21 @@ class ComputeFractals:
         }
         
         for param in kwargs:
-            if param == "pattern":
-                self.set_pattern(kwargs['pattern'])
-            elif param in valid_params - {"pattern"}:
+            if param in valid_params:
                 setattr(self, param, kwargs[param])
             else:
                 raise ValueError(f"unknown parameter: {param}")
 
-            if param == "z":
-                self.dev_z = cuda.to_device(np.array([self.z]).astype(np.float64))
-        
+        assert set(list(self.pattern)).issubset({"x", "y", "z"})
+        assert all([(v >= 0) and (v <= 4) for v in [self.x_min, self.x_max, self.y_min, self.y_max, self.z]])
+
+
+        if "z" in kwargs:
+            self.dev_z = cuda.to_device(np.array([self.z]).astype(np.float64))
+    
+        if "pattern" in kwargs or "num_iter" in kwargs:
+            self.recompute_fractal_kernel()
+
         # update y space if needed
         if (kwargs.keys() & {"y_min", "y_max", "size"}):
             y_space = np.tile(np.linspace(self.y_min, self.y_max, self.size), self.size).astype(np.float64)
@@ -119,17 +124,9 @@ class ComputeFractals:
         gradient = np.array(list(zip(r, g, b)))
         return gradient
 
-
-    # @param pattern: a string of "x", "y" and "z"
-    # for instance "xyxxyzzy"
-    # @param num_iter: precision at which colors are computed at
-    # each pixel. Increasing this number may reduce blurriness
-    def set_pattern(self, pattern: str):
-        assert set(list(pattern)).issubset({"x", "y", "z"})
-
-        self.pattern = pattern
-
-        sequence = tuple([{"x":0, "y":1, "z":2}[l] for l in pattern])
+    # recompute needed when pattern or num_iter is changed
+    def recompute_fractal_kernel(self):
+        sequence = tuple([{"x":0, "y":1, "z":2}[l] for l in self.pattern])
         len_sequence = len(sequence)
         num_iter = self.num_iter
         epsilon = 0.00001

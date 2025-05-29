@@ -99,12 +99,12 @@ class FractalZoom(ComputeFractals):
                             while (not any(pygame.mouse.get_pressed())):
                                 pygame.event.get()
                                 if (pygame.key.get_pressed()[pygame.K_s]):        
-                                    image.save(str(self.pattern) + '_' + 
-                                            str(round(self.x_min, 3)) + '_' + 
-                                            str(round(self.x_max, 3)) + '_' + 
-                                            str(round(self.y_min, 3)) + '_' + 
-                                            str(round(self.y_max, 3)) + '_z_' +
-                                            str(round(z, 3)) + '.png')
+                                    image.save(str(self.pattern) + "_" + 
+                                            str(round(self.x_min, 3)) + "_" + 
+                                            str(round(self.x_max, 3)) + "_" + 
+                                            str(round(self.y_min, 3)) + "_" + 
+                                            str(round(self.y_max, 3)) + "_z_" +
+                                            str(round(z, 3)) + ".png")
                                     
                                     print("image saved!")
                                     break

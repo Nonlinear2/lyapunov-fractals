@@ -19,13 +19,13 @@ def main():
 
     print("save the image? y/n")
     if (input() == "y"):
-        image.save(str(pattern) + '_' + 
-                str(round(x_min, 3)) + '_' + 
-                str(round(x_max, 3)) + '_' + 
-                str(round(y_min, 3)) + '_' + 
-                str(round(y_max, 3)) + '_z_' +
+        image.save(str(pattern) + "_" + 
+                str(round(x_min, 3)) + "_" + 
+                str(round(x_max, 3)) + "_" + 
+                str(round(y_min, 3)) + "_" + 
+                str(round(y_max, 3)) + "_z_" +
                 str(round(z, 3)) + "_" + 
-                "-".join(fractal_computer.colors) + '.png')
+                "-".join(fractal_computer.colors) + ".png")
         print("image saved")
 
 main()

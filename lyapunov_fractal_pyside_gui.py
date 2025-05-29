@@ -506,7 +506,7 @@ class FractalApp(QMainWindow):
                     str(round(self.x_max.value(), 3)) + "_" + 
                     str(round(self.y_min.value(), 3)) + "_" + 
                     str(round(self.y_max.value(), 3)) + "_z_" +
-                    str(round(self.z, 3)) + "_res_" + 
+                    str(round(self.z.value(), 3)) + "_res_" + 
                     str(self.color_res.value()) + "_"
                     "-".join(self.colors) + ".png",
                     "PNG Files (*.png);;JPEG Files (*.jpg);;All Files (*)"

@@ -7,6 +7,19 @@ from bisect import bisect_left
 from utils import ColorPalettes
 
 class ComputeFractals:
+    DEFAULT_PARAMS = {
+        "pattern": "xxxyxxyy",
+        "x_min": 0.01,
+        "x_max": 4,
+        "y_min": 0.01,
+        "y_max": 4,
+        "z": 2.81,
+        "size": 500,
+        "color_resolution": 500,
+        "num_iter": 200,
+        "colors": ColorPalettes.red_orange_yellow
+    }
+
     # @param x_min, x_max, y_min, y_max, z_min, z_max define the region in which
     # the fractal is computed. These values need to be between 0 and 4.
     # @param size the size of the image in pixels.
@@ -15,20 +28,6 @@ class ComputeFractals:
     # @param pattern a string of x, y, and z. the pattern defines which fractal is generated.
     # @num_iter at which precision are the pixel values computed.
     def __init__(self, verbose = False):
-
-        self.DEFAULT_PARAMS = {
-            "pattern": "xxxyxxyy",
-            "x_min": 0.01,
-            "x_max": 4,
-            "y_min": 0.01,
-            "y_max": 4,
-            "z": 2.81,
-            "size": 500,
-            "color_resolution": 500,
-            "num_iter": 200,
-            "colors": ColorPalettes.red_orange_yellow
-        }
-
         self.verbose = verbose
 
         self.gpu = cuda.get_current_device()
@@ -36,45 +35,55 @@ class ComputeFractals:
         if (self.verbose):
             print(f"used GPU: {self.gpu.name.decode("utf-8")}")
         
-        self.set_parameters(**self.DEFAULT_PARAMS)
+        self.set_parameters(**ComputeFractals.DEFAULT_PARAMS)
 
     def set_parameters(self, **kwargs):
-        valid_params = {
-            "pattern", "x_min", "x_max", "y_min", "y_max", "z", 
-            "size", "color_resolution", "num_iter", "colors"
-        }
-        
-        for param in kwargs:
-            if param in valid_params:
-                setattr(self, param, kwargs[param])
-            else:
-                raise ValueError(f"unknown parameter: {param}")
+        # "pattern", "x_min", "x_max", "y_min", "y_max", "z", 
+        # "size", "color_resolution", "num_iter", "colors"
 
-        assert set(list(self.pattern)).issubset({"x", "y", "z"})
-        assert all([(v >= 0) and (v <= 4) for v in [self.x_min, self.x_max, self.y_min, self.y_max, self.z]])
+        def is_new(attr):
+           return attr in kwargs and kwargs[attr] != getattr(self, attr, None)
 
-
-        if "z" in kwargs:
+        if is_new("z"):
+            self.z = kwargs["z"]
             self.dev_z = cuda.to_device(np.array([self.z]).astype(np.float64))
     
-        if "pattern" in kwargs or "num_iter" in kwargs:
+        if is_new("pattern") or is_new("num_iter"):
+            for param in {"pattern", "num_iter"}:
+                if param in kwargs:
+                    setattr(self, param, kwargs[param])
             self.recompute_fractal_kernel()
 
         # update y space if needed
-        if (kwargs.keys() & {"y_min", "y_max", "size"}):
+        if is_new("y_min") or is_new("y_max") or is_new("size"):
+            for param in {"y_min", "y_max", "size"}:
+                if param in kwargs:
+                    setattr(self, param, kwargs[param])
             y_space = np.tile(np.linspace(self.y_min, self.y_max, self.size), self.size).astype(np.float64)
             self.dev_y_space = cuda.to_device(y_space)
 
         # update x space if needed
-        if (kwargs.keys() & {"x_min", "x_max", "size"}):        
+        if is_new("x_min") or is_new("x_max") or is_new("size"):
+            for param in {"x_min", "x_max", "size"}:
+                if param in kwargs:
+                    setattr(self, param, kwargs[param])
             x_space = np.repeat(np.linspace(self.x_min, self.x_max, self.size), self.size).astype(np.float64)
             self.dev_x_space = cuda.to_device(x_space)
         
         # update output if needed
-        if "size" in kwargs:
+        if is_new("size"):
+            self.size = kwargs["size"]
             # x space is arbitrary, only the shape matters
             self.dev_output = cuda.device_array_like(self.dev_x_space)
             self.output = np.zeros_like(x_space)
+
+        # set remaining attributes 
+        for param in {"color_resolution", "colors"}:
+            if param in kwargs:
+                setattr(self, param, kwargs[param])
+
+        assert set(list(self.pattern)).issubset({"x", "y", "z"})
+        assert all([(v >= 0) and (v <= 4) for v in [self.x_min, self.x_max, self.y_min, self.y_max, self.z]])
 
     def get_color_idx(self, normalised_graph):
         split = np.linspace(0, 1, len(self.colors)+1)[:-1]

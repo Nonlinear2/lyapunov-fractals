@@ -11,7 +11,7 @@ class ComputeFractals:
     # the fractal is computed. These values need to be between 0 and 4.
     # @param size the size of the image in pixels.
     # @param colors a list of hex colors
-    # @param color_resolution how many different shades of self.COLORS are used
+    # @param color_resolution how many different shades of self.colors are used
     # @param pattern a string of x, y, and z. the pattern defines which fractal is generated.
     # @num_iter at which precision are the pixel values computed.
     def __init__(self, verbose = False):
@@ -211,8 +211,9 @@ class ComputeFractals:
         assert z_min < z_max
 
         video = []
-        for idx, z in enumerate(np.linspace(self.z_min, self.z_max, num_frames), 1):
-            image = Image.fromarray(self.compute_fractal(z).astype(np.uint8)).convert("RGB")
+        for idx, z in enumerate(np.linspace(z_min, z_max, num_frames), 1):
+            self.set_parameters(z=z)
+            image = Image.fromarray(self.compute_fractal().astype(np.uint8)).convert("RGB")
             video.append(image)
             if self.verbose:
                 print(f"frame {idx}/{num_frames}", end="\r")

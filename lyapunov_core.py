@@ -156,21 +156,6 @@ class ComputeFractals:
         
         self.fractal_kernel = fractal_kernel
         
-    def set_region(self, x_min, x_max, y_min, y_max):
-
-        assert all([(v >= 0) and (v <= 4) for v in [x_min, x_max, y_min, y_max]])
-
-        self.x_min = x_min
-        self.x_max = x_max
-        self.y_min = y_min
-        self.y_max = y_max
-
-        y_space = np.tile(np.linspace(self.y_min, self.y_max, self.size), self.size).astype(np.float64)
-        self.dev_y_space = cuda.to_device(y_space)
-
-        x_space = np.repeat(np.linspace(self.x_min, self.x_max, self.size), self.size).astype(np.float64)
-        self.dev_x_space = cuda.to_device(x_space)
-    
     def get_gradient(self, indexes):
         np.random.seed(21)
         lambda_count = dict(Counter(np.random.choice(indexes, min(indexes.size, 100_000)))) # sample only 100_000 values of image to make

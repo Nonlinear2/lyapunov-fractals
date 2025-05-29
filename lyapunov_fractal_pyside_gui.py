@@ -44,10 +44,9 @@ class FractalWorker(QThread):
     def __init__(self, fractal_params):
         super().__init__()
         self.fractal_computer = ComputeFractals(verbose=False)
-        self.fractal_params = fractal_params
+        self.fractal_computer.set_parameters(**fractal_params)
 
     def run(self):
-        self.fractal_computer.set_parameters(**self.fractal_params)
         img_array = self.fractal_computer.compute_fractal()
         self.finished.emit(img_array)
 
@@ -396,12 +395,13 @@ class FractalApp(QMainWindow):
         if self.worker and self.worker.isRunning():
             return
 
-        params = self.get_fractal_params(is_low_res=is_low_res)
 
         if not is_low_res and self.real_time_mode:
             self.real_time_mode = False
             self.low_res_btn.setText(self.LOW_RES_BTN_TEXT)
             self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
+
+        params = self.get_fractal_params(is_low_res=is_low_res)
 
         # Start worker thread
         self.worker = FractalWorker(params)

@@ -6,13 +6,13 @@ def valid_hex_string(input):
 
 @dataclass
 class ColorPalettes:
-    yellow_purple_black = ['#E0D12B', '#DAA520', '#FFBF00', '#FF9500', '#FFA500', '#FF7F50',
-        '#FA8072', '#F08080', '#FFB6C1', "#E0BE4C", "#F5CAAF", '#DA70D6', '#BA55D3', '#9370DB',
-        '#8A2BE2', '#6A0DAD', '#4B0082', '#2E0854', '#1A0028', '#000000']
+    yellow_purple_black = ["#E0D12B", "#DAA520", "#FFBF00", "#FF9500", "#FFA500", "#FF7F50",
+        "#FA8072", "#F08080", "#FFB6C1", "#E0BE4C", "#F5CAAF", "#DA70D6", "#BA55D3", "#9370DB",
+        "#8A2BE2", "#6A0DAD", "#4B0082", "#2E0854", "#1A0028", "#000000"]
 
     black_red_blue = ["#03071e", "#370617", "#6a040f", "#9d0208", "#d00000", "#FF7F50",
-        "#B8860B", "#FFC700", "#bdb76b", "#6b8e23", "#556b2f", '#b3cde0', '#a1c4d6',
-        '#8bbdd9', '#7aaed4', '#699ecf', '#5e94c9', '#4b82b4']    
+        "#B8860B", "#FFC700", "#bdb76b", "#6b8e23", "#556b2f", "#b3cde0", "#a1c4d6",
+        "#8bbdd9", "#7aaed4", "#699ecf", "#5e94c9", "#4b82b4"]    
 
     purple_red_blue = ["#411d31", "#631b34", "#32535f", "#0b8a8f", "#0eaf9b", "#30e1b9"]
 

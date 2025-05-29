@@ -14,59 +14,65 @@ class ComputeFractals:
     # @param color_resolution how many different shades of self.COLORS are used
     # @param pattern a string of x, y, and z. the pattern defines which fractal is generated.
     # @num_iter at which precision are the pixel values computed.
-    def __init__(self,
-                 x_min=0.01,
-                 x_max=4,
-                 y_min=0.01,
-                 y_max=4,
-                 z_min=0.01,
-                 z_max=4,
-                 size = 500,
-                 colors = ColorPalettes.red_orange_yellow,
-                 color_resolution = 500,
-                 pattern = "xxxyxxyy",
-                 num_iter = 200,
-                 verbose = False,
-                 ):
+    def __init__(self, verbose = False):
 
-        assert all([(v >= 0) and (v <= 4) for v in [x_min, x_max, y_min, y_max, z_min, z_max]])
-
-        self.COLORS = colors
-
-        self.x_min = x_min
-        self.x_max = x_max
-        self.y_min = y_min
-        self.y_max = y_max
-        self.z_min = z_min
-        self.z_max = z_max
-
-        self.size = size
-
-        self.color_resolution = color_resolution
-
-        self.num_iter = num_iter
+        self.DEFAULT_PARAMS = {
+            "pattern": "xxxyxxyy",
+            "x_min": 0.01,
+            "x_max": 4,
+            "y_min": 0.01,
+            "y_max": 4,
+            "z": 2.81,
+            "size": 500,
+            "color_resolution": 500,
+            "num_iter": 200,
+            "colors": ColorPalettes.red_orange_yellow
+        }
 
         self.verbose = verbose
-
-        self.set_pattern(pattern)
-
-        y_space = np.tile(np.linspace(self.y_min, self.y_max, self.size), self.size).astype(np.float64)
-        self.dev_y_space = cuda.to_device(y_space)
-
-        x_space = np.repeat(np.linspace(self.x_min, self.x_max, self.size), self.size).astype(np.float64)
-        self.dev_x_space = cuda.to_device(x_space)
-
-        self.dev_output = cuda.device_array_like(self.dev_x_space)
-
-        self.output = np.zeros_like(x_space)
 
         self.gpu = cuda.get_current_device()
 
         if (self.verbose):
             print(f"used GPU: {self.gpu.name.decode("utf-8")}")
+        
+        self.set_parameters(**self.DEFAULT_PARAMS)
+
+    def set_parameters(self, **kwargs):
+        valid_params = {
+            "pattern", "x_min", "x_max", "y_min", "y_max", "z", 
+            "size", "color_resolution", "num_iter", "colors"
+        }
+        
+        for param in kwargs:
+            if param == "pattern":
+                self.set_pattern(kwargs['pattern'])
+            elif param in valid_params - {"pattern"}:
+                setattr(self, param, kwargs[param])
+            else:
+                raise ValueError(f"unknown parameter: {param}")
+
+            if param == "z":
+                self.dev_z = cuda.to_device(np.array([self.z]).astype(np.float64))
+        
+        # update y space if needed
+        if (kwargs.keys() & {"y_min", "y_max", "size"}):
+            y_space = np.tile(np.linspace(self.y_min, self.y_max, self.size), self.size).astype(np.float64)
+            self.dev_y_space = cuda.to_device(y_space)
+
+        # update x space if needed
+        if (kwargs.keys() & {"x_min", "x_max", "size"}):        
+            x_space = np.repeat(np.linspace(self.x_min, self.x_max, self.size), self.size).astype(np.float64)
+            self.dev_x_space = cuda.to_device(x_space)
+        
+        # update output if needed
+        if "size" in kwargs:
+            # x space is arbitrary, only the shape matters
+            self.dev_output = cuda.device_array_like(self.dev_x_space)
+            self.output = np.zeros_like(x_space)
 
     def get_color_idx(self, normalised_graph):
-        split = np.linspace(0, 1, len(self.COLORS)+1)[:-1]
+        split = np.linspace(0, 1, len(self.colors)+1)[:-1]
         integral_0_to_x = np.cumsum(normalised_graph)
 
         color_switch_idx = []
@@ -86,7 +92,7 @@ class ComputeFractals:
         switch_idx = self.get_color_idx(frequence_map/sum(frequence_map))
 
         gradient = []
-        colors = iter(self.COLORS)
+        colors = iter(self.colors)
         for idx in switch_idx[1:]:
             col = self.hex_to_RGB(next(colors))
             gradient += [col]*(idx-len(gradient))
@@ -96,7 +102,7 @@ class ComputeFractals:
 
         def smooth(y, box_pts):
             box = np.ones(box_pts)/box_pts
-            y_smooth = np.convolve(y, box, mode='same')
+            y_smooth = np.convolve(y, box, mode="same")
             return y_smooth
         
         # this coefficient changes how smooth the color transitions are
@@ -176,9 +182,7 @@ class ComputeFractals:
         gradient = self.generate_gradient(frequence)
         return gradient
 
-    def compute_fractal(self, z):
-
-        assert (0 <= z) and (z <= 4)
+    def compute_fractal(self):
 
         if self.size**2 <= self.gpu.MAX_THREADS_PER_BLOCK:
             blockspergrid = 1
@@ -190,16 +194,15 @@ class ComputeFractals:
             threadsperblock = self.gpu.MAX_THREADS_PER_BLOCK
             blockspergrid = (self.size**2 + (threadsperblock-1)) // threadsperblock
         else:
-            print('grid stride loops not implemented')
+            print("grid stride loops not implemented")
             exit()
 
         self.dev_output.copy_to_device(self.dev_x_space)
-        dev_z = cuda.to_device(np.array([z]).astype(np.float64))
 
         if (self.verbose):
             print("copied data to GPU, executing fractal kernel")
 
-        self.fractal_kernel[blockspergrid, threadsperblock](self.dev_output, self.dev_y_space, dev_z)
+        self.fractal_kernel[blockspergrid, threadsperblock](self.dev_output, self.dev_y_space, self.dev_z)
         cuda.synchronize()
 
         if (self.verbose):
@@ -221,10 +224,13 @@ class ComputeFractals:
 
         return image
     
-    def create_fractal_video(self, num_frames):
+    def create_fractal_video(self, z_min, z_max, num_frames):
+        assert all([(v >= 0) and (v <= 4) for v in [z_min, z_max]])
+        assert z_min < z_max
+
         video = []
         for idx, z in enumerate(np.linspace(self.z_min, self.z_max, num_frames), 1):
-            image = Image.fromarray(self.compute_fractal(z).astype(np.uint8)).convert('RGB')
+            image = Image.fromarray(self.compute_fractal(z).astype(np.uint8)).convert("RGB")
             video.append(image)
             if self.verbose:
                 print(f"frame {idx}/{num_frames}", end="\r")

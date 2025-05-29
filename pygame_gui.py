@@ -87,7 +87,7 @@ class FractalZoom(ComputeFractals):
                                 pattern=self.pattern, 
                                 x_min = self.x_min, x_max = self.x_max, 
                                 y_min = self.y_min, y_max = self.y_max,
-                                size=2000, colors=self.COLORS, color_resolution=1900, num_iter=8000
+                                size=2000, colors=self.colors, color_resolution=1900, num_iter=8000
                             )
                             
                             image = fractal_computer.compute_fractal(z)

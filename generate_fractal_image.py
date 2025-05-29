@@ -25,7 +25,7 @@ def main():
                 str(round(y_min, 3)) + '_' + 
                 str(round(y_max, 3)) + '_z_' +
                 str(round(z, 3)) + "_" + 
-                "-".join(fractal_computer.COLORS) + '.png')
+                "-".join(fractal_computer.colors) + '.png')
         print("image saved")
 
 main()

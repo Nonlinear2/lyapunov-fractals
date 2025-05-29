@@ -41,14 +41,14 @@ class Config:
 class FractalWorker(QThread):
     finished = Signal(np.ndarray)
 
-    def __init__(self, fractal_params, z_value):
+    def __init__(self, fractal_params):
         super().__init__()
+        self.fractal_computer = ComputeFractals(verbose=False)
         self.fractal_params = fractal_params
-        self.z_value = z_value
 
     def run(self):
-        fractal = ComputeFractals(**self.fractal_params)
-        img_array = fractal.compute_fractal(self.z_value)
+        self.fractal_computer.set_parameters(**self.fractal_params)
+        img_array = self.fractal_computer.compute_fractal()
         self.finished.emit(img_array)
 
 # handle mouse clicks for zooming
@@ -179,11 +179,11 @@ class FractalApp(QMainWindow):
         grid_layout = QGridLayout()
         
         coords_fields = {
-            'z': ('Z', 2.86),
-            'x_min': ('X Min', 1.009),
-            'x_max': ('X Max', 1.244),
-            'y_min': ('Y Min', 3.662),
-            'y_max': ('Y Max', 3.898),
+            "z": ("Z", 2.86),
+            "x_min": ("X Min", 1.009),
+            "x_max": ("X Max", 1.244),
+            "y_min": ("Y Min", 3.662),
+            "y_max": ("Y Max", 3.898),
         }
 
         self.pattern = QLineEdit("yyxxyyyyyzz")
@@ -293,6 +293,7 @@ class FractalApp(QMainWindow):
         self.save_btn = QPushButton(self.SAVE_BTN_TEXT)
         self.save_btn.clicked.connect(self.save_image)
         self.save_btn.setStyleSheet(self.SAVE_BTN_STYLE)
+        self.save_btn.setEnabled(False)
         layout.addWidget(self.save_btn)
 
     def pick_color(self, index):
@@ -334,7 +335,7 @@ class FractalApp(QMainWindow):
     def get_fractal_params(self, is_low_res=True):
         colors = []
         for color_input in self.color_inputs:
-            color = color_input.text().strip().lower()
+            color = color_input.text().lower()
             if valid_hex_string(color):
                 colors.append(color)
 
@@ -350,18 +351,19 @@ class FractalApp(QMainWindow):
             iterations = self.high_res_iter.value()
         
         params = {
-            'pattern': self.pattern.text().strip(),
-            'x_min': self.x_min.value(),
-            'x_max': self.x_max.value(),
-            'y_min': self.y_min.value(),
-            'y_max': self.y_max.value(),
-            'size': size,
-            'color_resolution': self.color_res.value(),
-            'num_iter': iterations,
-            'colors': colors
+            "pattern": self.pattern.text(),
+            "x_min": self.x_min.value(),
+            "x_max": self.x_max.value(),
+            "y_min": self.y_min.value(),
+            "y_max": self.y_max.value(),
+            "z": self.z.value(),
+            "size": size,
+            "color_resolution": self.color_res.value(),
+            "num_iter": iterations,
+            "colors": colors
         }
 
-        return params, self.z.value()
+        return params
 
     def toggle_real_time_mode(self):
         if self.real_time_mode:
@@ -381,6 +383,8 @@ class FractalApp(QMainWindow):
         else:
             self.real_time_mode = True
 
+            self.save_btn.setEnabled(False)
+
             # Update button to show exit option
             self.low_res_btn.setText("Exit Real-Time Mode")
             self.low_res_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 10px; }")
@@ -392,7 +396,7 @@ class FractalApp(QMainWindow):
         if self.worker and self.worker.isRunning():
             return
 
-        params, z_value = self.get_fractal_params(is_low_res=is_low_res)
+        params = self.get_fractal_params(is_low_res=is_low_res)
 
         if not is_low_res and self.real_time_mode:
             self.real_time_mode = False
@@ -400,7 +404,7 @@ class FractalApp(QMainWindow):
             self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
 
         # Start worker thread
-        self.worker = FractalWorker(params, z_value)
+        self.worker = FractalWorker(params)
         self.worker.finished.connect(lambda img: self.on_image_generated(img, is_low_res))
         self.worker.start()
 
@@ -411,6 +415,10 @@ class FractalApp(QMainWindow):
             # Re-enable generate button
             self.high_res_btn.setText(self.HIGH_REST_BTN_TEXT)
             self.high_res_btn.setEnabled(True)
+
+            # enable save button
+            self.save_btn.setEnabled(True)
+
         self.display_image(img)
 
     def display_image(self, img):
@@ -485,14 +493,22 @@ class FractalApp(QMainWindow):
         
         return new_x_min, new_x_max, new_y_min, new_y_max
 
+
     # save the current high resolution image
     def save_image(self):
-        if self.current_high_res_image:
-            try:                
+        if self.current_high_res_image is not None:
+            try:
                 file_path, _ = QFileDialog.getSaveFileName(
                     self,
                     "Save High-Res Fractal Image",
-                    "fractal_highres.png",
+                    self.pattern.text() + "_" + 
+                    str(round(self.x_min.value(), 3)) + "_" + 
+                    str(round(self.x_max.value(), 3)) + "_" + 
+                    str(round(self.y_min.value(), 3)) + "_" + 
+                    str(round(self.y_max.value(), 3)) + "_z_" +
+                    str(round(self.z, 3)) + "_res_" + 
+                    str(self.color_res.value()) + "_"
+                    "-".join(self.colors) + ".png",
                     "PNG Files (*.png);;JPEG Files (*.jpg);;All Files (*)"
                 )
 
@@ -518,7 +534,7 @@ class FractalApp(QMainWindow):
 def main():
     app = QApplication(sys.argv)
 
-    app.setStyle('Fusion')
+    app.setStyle("Fusion")
 
     window = FractalApp()
     window.show()

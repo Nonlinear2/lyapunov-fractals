@@ -54,8 +54,10 @@ class ComputeFractals:
                     setattr(self, param, kwargs[param])
             self.recompute_fractal_kernel()
 
+        new_size = is_new("size")
+
         # update y space if needed
-        if is_new("y_min") or is_new("y_max") or is_new("size"):
+        if is_new("y_min") or is_new("y_max") or new_size:
             for param in {"y_min", "y_max", "size"}:
                 if param in kwargs:
                     setattr(self, param, kwargs[param])
@@ -63,7 +65,7 @@ class ComputeFractals:
             self.dev_y_space = cuda.to_device(y_space)
 
         # update x space if needed
-        if is_new("x_min") or is_new("x_max") or is_new("size"):
+        if is_new("x_min") or is_new("x_max") or new_size:
             for param in {"x_min", "x_max", "size"}:
                 if param in kwargs:
                     setattr(self, param, kwargs[param])
@@ -71,7 +73,7 @@ class ComputeFractals:
             self.dev_x_space = cuda.to_device(x_space)
         
         # update output if needed
-        if is_new("size"):
+        if new_size:
             self.size = kwargs["size"]
             # x space is arbitrary, only the shape matters
             self.dev_output = cuda.device_array_like(self.dev_x_space)

@@ -41,9 +41,11 @@ class Config:
 class FractalWorker(QThread):
     finished = Signal(np.ndarray)
 
-    def __init__(self, fractal_params):
+    def __init__(self):
         super().__init__()
         self.fractal_computer = ComputeFractals(verbose=False)
+
+    def set_parameters(self, fractal_params):
         self.fractal_computer.set_parameters(**fractal_params)
 
     def run(self):
@@ -130,6 +132,8 @@ class FractalApp(QMainWindow):
 
         gpu = get_current_device()
         self.max_image_size = (gpu.MAX_GRID_DIM_X * gpu.MAX_THREADS_PER_BLOCK)**0.5
+
+        self.worker = FractalWorker()
 
         # timer to debounce fractal generation
         self.regeneration_timer = QTimer()
@@ -392,9 +396,8 @@ class FractalApp(QMainWindow):
             self.start_image_gen(is_low_res=True)
 
     def start_image_gen(self, is_low_res):
-        if self.worker and self.worker.isRunning():
+        if self.worker.isRunning():
             return
-
 
         if not is_low_res and self.real_time_mode:
             self.real_time_mode = False
@@ -402,9 +405,8 @@ class FractalApp(QMainWindow):
             self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
 
         params = self.get_fractal_params(is_low_res=is_low_res)
-
+        self.worker.set_parameters(params)
         # Start worker thread
-        self.worker = FractalWorker(params)
         self.worker.finished.connect(lambda img: self.on_image_generated(img, is_low_res))
         self.worker.start()
 
@@ -525,7 +527,7 @@ class FractalApp(QMainWindow):
                 msg_box.exec()
 
     def closeEvent(self, event):
-        if self.worker and self.worker.isRunning():
+        if self.worker.isRunning():
             self.worker.terminate()
             self.worker.wait()
         event.accept()

@@ -105,16 +105,12 @@ class ComputeFractals:
         #Pass 16 to the integer function for change of base
         return [int(hex_str[i:i+2], 16) for i in range(1,6,2)]
 
-    def generate_gradient(self, indexes):
-        np.random.seed(21)
-        # improve performance by sampling only 50_000 values of image to make the gradient
-        lambda_count = dict(Counter(np.random.choice(indexes, min(indexes.size, 50_000)))) 
-        frequence_map = np.array([lambda_count.get(i, 0) for i in range(self.color_resolution)])
-
-        switch_idx = self.get_color_idx(frequence_map/sum(frequence_map))
+    def generate_gradient(self, switch_idx, colors = None):
+        if colors is None:
+            colors = self.colors
 
         gradient = []
-        colors = iter(self.colors)
+        colors = iter(colors)
         for idx in switch_idx[1:]:
             col = self.hex_to_RGB(next(colors))
             gradient += [col]*(idx-len(gradient))
@@ -202,19 +198,33 @@ class ComputeFractals:
         self.dev_output.copy_to_host(self.output)
 
         if (self.verbose):
-            print("data copied, computing color gradient")
+            print("data copied")
+
+    def apply_gradient(self, colors = None):
+        if (self.verbose):
+            print("computing color gradient")
 
         lambda_min = np.amin(self.output)
         scaling_factor = np.amax(self.output) - lambda_min
         if (scaling_factor == 0):
             return np.zeros((self.size, self.size, 3))
         indexes = ((self.color_resolution-1)*(self.output-lambda_min) / scaling_factor).astype(int)
-        gradient = self.generate_gradient(indexes)
+
+        np.random.seed(21)
+        # improve performance by sampling only 50_000 values of image to make the gradient
+        lambda_count = dict(Counter(np.random.choice(indexes, min(indexes.size, 50_000)))) 
+        frequence_map = np.array([lambda_count.get(i, 0) for i in range(self.color_resolution)])
+
+        switch_idx = self.get_color_idx(frequence_map/sum(frequence_map))
+
+        gradient = self.generate_gradient(switch_idx, colors)
+
         image = gradient[indexes].reshape((self.size, self.size, 3))
         image = np.flip(image, axis=1)
 
         return image
-    
+
+
     def create_fractal_video(self, z_min, z_max, num_frames):
         assert all([(v >= 0) and (v <= 4) for v in [z_min, z_max]])
         assert z_min < z_max

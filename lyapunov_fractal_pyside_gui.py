@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QGroupBox, QSpinBox, QFileDialog)
 
 from PySide6.QtCore import Qt, QThread, Signal, QTimer
-from PySide6.QtGui import QPixmap, QImage, QRegularExpressionValidator
+from PySide6.QtGui import QPixmap, QImage, QRegularExpressionValidator, QColor
 from numba.cuda import get_current_device
 from lyapunov_core import ComputeFractals
 from utils import valid_hex_string
@@ -49,8 +49,13 @@ class FractalWorker(QThread):
         self.fractal_computer.set_parameters(**fractal_params)
 
     def run(self):
-        img_array = self.fractal_computer.compute_fractal()
+        self.fractal_computer.compute_fractal()
+        img_array = self.fractal_computer.apply_gradient()
         self.finished.emit(img_array)
+
+    @property
+    def fractal(self):
+        return self.fractal_computer.output
 
 # handle mouse clicks for zooming
 class FractalRegion(QLabel):
@@ -278,7 +283,45 @@ class FractalApp(QMainWindow):
             color_layout.addLayout(color_row_layout)
         
         layout.addWidget(color_group)
-    
+
+    def pick_color(self, index):
+        current_color = QColor(self.color_inputs[index].text())
+        
+        dialog = QColorDialog(current_color, self)
+        dialog.setOption(QColorDialog.DontUseNativeDialog, True)
+        
+        # Real-time preview
+        dialog.currentColorChanged.connect(
+            lambda color: self.preview_color(index, color)
+        )
+        
+        # Apply or revert based on user choice
+        if dialog.exec() == QColorDialog.Accepted:
+            self.apply_color(index, dialog.selectedColor())
+        else:
+            self.revert_color(index, current_color)
+
+    def preview_color(self, index, color):
+        if color.isValid():
+            self.regenerate_image_with_preview(index, color.name())
+
+    def apply_color(self, index, color):
+        self.color_inputs[index].setText(color.name())
+
+    def revert_color(self, index, original_color):
+        self.regenerate_image_with_preview(index, original_color.name())
+
+    def regenerate_image_with_preview(self, preview_index, preview_color):
+        colors = []
+        for i in range(6):
+            if i == preview_index:
+                colors.append(preview_color)
+            else:
+                colors.append(self.color_inputs[i].text())
+        
+        img = self.worker.fractal_computer.apply_gradient(colors)
+        self.display_image(img)
+
     def create_buttons(self, layout):
         # Real-time generation button
         self.low_res_btn = QPushButton(self.LOW_RES_BTN_TEXT)
@@ -298,13 +341,6 @@ class FractalApp(QMainWindow):
         self.save_btn.setStyleSheet(self.SAVE_BTN_STYLE)
         self.save_btn.setEnabled(False)
         layout.addWidget(self.save_btn)
-
-    def pick_color(self, index):
-        color = QColorDialog.getColor()
-        
-        if color.isValid():
-            self.color_inputs[index].setText(color.name())
-            # The textChanged signal will automatically trigger regeneration
 
     # Correct bounds to ensure min < max
     def sanitize_inputs(self, changed_field):
@@ -412,7 +448,7 @@ class FractalApp(QMainWindow):
 
     def on_image_generated(self, img, is_low_res):
         if not is_low_res:
-            self.current_high_res_image = img
+            self.current_high_res_fractal = self.worker.fractal
 
             # Re-enable generate button
             self.high_res_btn.setText(self.HIGH_REST_BTN_TEXT)

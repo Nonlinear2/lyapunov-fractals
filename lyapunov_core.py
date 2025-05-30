@@ -86,6 +86,7 @@ class ComputeFractals:
 
         assert set(list(self.pattern)).issubset({"x", "y", "z"})
         assert all([(v >= 0) and (v <= 4) for v in [self.x_min, self.x_max, self.y_min, self.y_max, self.z]])
+        assert self.color_resolution > 1
 
     def get_color_idx(self, normalised_graph):
         split = np.linspace(0, 1, len(self.colors)+1)[:-1]
@@ -104,7 +105,12 @@ class ComputeFractals:
         #Pass 16 to the integer function for change of base
         return [int(hex_str[i:i+2], 16) for i in range(1,6,2)]
 
-    def generate_gradient(self, frequence_map):
+    def generate_gradient(self, indexes):
+        np.random.seed(21)
+        # improve performance by sampling only 50_000 values of image to make the gradient
+        lambda_count = dict(Counter(np.random.choice(indexes, min(indexes.size, 50_000)))) 
+        frequence_map = np.array([lambda_count.get(i, 0) for i in range(self.color_resolution)])
+
         switch_idx = self.get_color_idx(frequence_map/sum(frequence_map))
 
         gradient = []
@@ -166,14 +172,6 @@ class ComputeFractals:
             x_space[pos] = lambda_  
         
         self.fractal_kernel = fractal_kernel
-        
-    def get_gradient(self, indexes):
-        np.random.seed(21)
-        lambda_count = dict(Counter(np.random.choice(indexes, min(indexes.size, 100_000)))) # sample only 100_000 values of image to make
-        # the gradient. this improves performance
-        frequence = np.array([lambda_count.get(i, 0) for i in range(self.color_resolution)])
-        gradient = self.generate_gradient(frequence)
-        return gradient
 
     def compute_fractal(self):
 
@@ -211,7 +209,7 @@ class ComputeFractals:
         if (scaling_factor == 0):
             return np.zeros((self.size, self.size, 3))
         indexes = ((self.color_resolution-1)*(self.output-lambda_min) / scaling_factor).astype(int)
-        gradient = self.get_gradient(indexes)
+        gradient = self.generate_gradient(indexes)
         image = gradient[indexes].reshape((self.size, self.size, 3))
         image = np.flip(image, axis=1)
 

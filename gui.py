@@ -580,6 +580,8 @@ class FractalApp(QMainWindow):
     def save_image(self):
         if self.current_high_res_image is not None:
             try:
+                colors = [color_input.text().replace('#', '').lower() for color_input in self.color_inputs]
+
                 file_path, _ = QFileDialog.getSaveFileName(
                     self,
                     "Save High-Res Fractal Image",
@@ -589,8 +591,8 @@ class FractalApp(QMainWindow):
                     str(round(self.y_min.value(), 3)) + "_" + 
                     str(round(self.y_max.value(), 3)) + "_z_" +
                     str(round(self.z.value(), 3)) + "_res_" + 
-                    str(self.color_res.value()) + "_"
-                    "-".join(self.colors) + ".png",
+                    str(self.color_res.value()) + "_" +
+                    "-".join(colors) + ".png",
                     "PNG Files (*.png);;JPEG Files (*.jpg);;All Files (*)"
                 )
 

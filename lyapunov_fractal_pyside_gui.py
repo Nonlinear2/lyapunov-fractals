@@ -308,7 +308,7 @@ class FractalApp(QMainWindow):
         self.high_res_btn.setStyleSheet(self.HIGH_RES_BTN_STYLE)
         self.high_res_btn.setFocusPolicy(Qt.NoFocus)
         layout.addWidget(self.high_res_btn)
-        
+
         # Save button (for high-res images only)
         self.save_btn = QPushButton(self.SAVE_BTN_TEXT)
         self.save_btn.clicked.connect(self.save_image)
@@ -360,7 +360,7 @@ class FractalApp(QMainWindow):
             self.y_max.setValue(y_min)
 
     # Handle parameter changes by regenerating the fractal if in real-time mode
-    def on_parameter_changed(self, delay=Config.REGENERATION_DELAY):
+    def on_parameter_changed(self, *, delay=Config.REGENERATION_DELAY):
         # determined the changed field by the sender
         self.sanitize_inputs(self.sender())
 
@@ -394,23 +394,19 @@ class FractalApp(QMainWindow):
             self.z_timer.stop()
             return
 
-        if Qt.Key_Space in self.keys_pressed:
-            self.change_z(0.01)
-        elif Qt.Key_Backspace in self.keys_pressed:
-            self.change_z(-0.01)
-        else:
-            # Stop timer if no keys are pressed
-            self.z_timer.stop()
+        delta = 0.01
+        if Qt.Key_Backspace in self.keys_pressed:
+            delta *= -1
 
-    def change_z(self, delta):
-        current_z = self.z.value()
-        new_z = (current_z + delta) % 4
-        if new_z < 0:
-            new_z = 4 + new_z
+        self.z.blockSignals(True)
+        self.z.setValue((self.z.value() + delta) % 4)
+        self.z.blockSignals(False)
+
+        # Trigger immediate regeneration without delay
+        if self.real_time_mode:
+            self.regeneration_timer.stop()  # cancel any pending regeneration
+            self.start_image_gen(is_low_res=True)
         
-        self.z.setValue(new_z)
-        # this will trigger on_parameter_changed automatically
-
     # extract parameters from GUI fields
     def get_fractal_params(self, is_low_res=True):
         colors = []

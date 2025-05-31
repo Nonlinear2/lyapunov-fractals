@@ -64,10 +64,13 @@ class FractalRegion(QLabel):
     def __init__(self):
         super().__init__()
         self.BACKGROUND_TEXT = \
-            "Start real time generation first, then hold left mouse to zoom in, right mouse to zoom out"
+        "Start real-time generation first." \
+        "Hold the left mouse button to zoom in, and the right mouse button to zoom out." \
+        "Press Space to increase the Z coordinate, Backspace to decrease it." \
+        "Press C to cycle the pattern."
 
         self.setMinimumSize(*Config.MIN_FRACTAL_REGION_SIZE)
-        self.setStyleSheet("background-color: black;")
+        self.setStyleSheet("background-color: black; font: 15pt;")
         self.setAlignment(Qt.AlignCenter)
         self.setText(self.BACKGROUND_TEXT)
 
@@ -376,6 +379,8 @@ class FractalApp(QMainWindow):
             if not self.z_timer.isActive():
                 self.z_timer.start()
             event.accept()
+        elif key == Qt.Key_C:
+            self.pattern.setText(self.pattern.text()[-1] + self.pattern.text()[:-1])
         else:
             super().keyPressEvent(event)
 

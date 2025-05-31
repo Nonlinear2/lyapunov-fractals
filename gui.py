@@ -341,6 +341,8 @@ class FractalApp(QMainWindow):
             colors = list(map(lambda x: x.text(), self.color_inputs))
             colors[index] = color.name()
             img = self.worker.fractal_computer.apply_gradient(colors)
+            if not self.real_time_mode:
+                self.current_high_res_image = img
             self.display_image(img)
 
     # Correct bounds to ensure min < max
@@ -490,7 +492,7 @@ class FractalApp(QMainWindow):
 
     def on_image_generated(self, img, is_low_res):
         if not is_low_res:
-            self.current_high_res_fractal = self.worker.fractal
+            self.current_high_res_image = img
 
             # Re-enable generate button
             self.high_res_btn.setText(self.HIGH_REST_BTN_TEXT)

@@ -323,37 +323,22 @@ class FractalApp(QMainWindow):
         dialog = QColorDialog(current_color, self)
         dialog.setOption(QColorDialog.DontUseNativeDialog, True)
         
-        # Real-time preview
         dialog.currentColorChanged.connect(
-            lambda color: self.preview_color(index, color)
+            lambda color: self.set_image_color(index, color)
         )
-        
-        # Apply or revert based on user choice
+
+        # apply or revert based on user choice
         if dialog.exec() == QColorDialog.Accepted:
-            self.apply_color(index, dialog.selectedColor())
+            self.color_inputs[index].setText(dialog.selectedColor().name())
         else:
-            self.revert_color(index, current_color)
+            self.set_image_color(index, current_color)
 
-    def preview_color(self, index, color):
+    def set_image_color(self, index, color):
         if color.isValid():
-            self.regenerate_image_with_preview(index, color.name())
-
-    def apply_color(self, index, color):
-        self.color_inputs[index].setText(color.name())
-
-    def revert_color(self, index, original_color):
-        self.regenerate_image_with_preview(index, original_color.name())
-
-    def regenerate_image_with_preview(self, preview_index, preview_color):
-        colors = []
-        for i in range(6):
-            if i == preview_index:
-                colors.append(preview_color)
-            else:
-                colors.append(self.color_inputs[i].text())
-        
-        img = self.worker.fractal_computer.apply_gradient(colors)
-        self.display_image(img)
+            colors = list(map(lambda x: x.text(), self.color_inputs))
+            colors[index] = color.name()
+            img = self.worker.fractal_computer.apply_gradient(colors)
+            self.display_image(img)
 
     # Correct bounds to ensure min < max
     def sanitize_inputs(self, changed_field):

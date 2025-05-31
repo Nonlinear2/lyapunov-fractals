@@ -105,38 +105,6 @@ class ComputeFractals:
         #Pass 16 to the integer function for change of base
         return [int(hex_str[i:i+2], 16) for i in range(1,6,2)]
 
-    def generate_gradient(self, switch_idx, colors = None):
-        if colors is None:
-            colors = self.colors
-
-        gradient = []
-        colors = iter(colors)
-        for idx in switch_idx[1:]:
-            col = self.hex_to_RGB(next(colors))
-            gradient += [col]*(idx-len(gradient))
-        gradient += [gradient[-1]]
-        
-        r, g, b = zip(*gradient)
-
-        def smooth(y, box_pts):
-            box = np.ones(box_pts)/box_pts
-            y_smooth = np.convolve(y, box, mode="same")
-            return y_smooth
-        
-        # this coefficient changes how smooth the color transitions are
-        box_pts = 50
-        for _ in range(3):
-            r = smooth(r, box_pts)
-            g = smooth(g, box_pts)
-            b = smooth(b, box_pts)
-
-        r = np.rint(r).astype(int)
-        g = np.rint(g).astype(int)
-        b = np.rint(b).astype(int)
-
-        gradient = np.array(list(zip(r, g, b)))
-        return gradient
-
     # recompute needed when pattern or num_iter is changed
     def recompute_fractal_kernel(self):
         sequence = tuple([{"x":0, "y":1, "z":2}[l] for l in self.pattern])
@@ -199,27 +167,56 @@ class ComputeFractals:
 
         if (self.verbose):
             print("data copied")
-
-    def apply_gradient(self, colors = None):
+        
         if (self.verbose):
-            print("computing color gradient")
+            print("preparing color gradient")
 
         lambda_min = np.amin(self.output)
         scaling_factor = np.amax(self.output) - lambda_min
         if (scaling_factor == 0):
             return np.zeros((self.size, self.size, 3))
-        indexes = ((self.color_resolution-1)*(self.output-lambda_min) / scaling_factor).astype(int)
+        self.indexes = ((self.color_resolution-1)*(self.output-lambda_min) / scaling_factor).astype(int)
 
         np.random.seed(21)
         # improve performance by sampling only 50_000 values of image to make the gradient
-        lambda_count = dict(Counter(np.random.choice(indexes, min(indexes.size, 50_000)))) 
+        lambda_count = dict(Counter(np.random.choice(self.indexes, min(self.indexes.size, 50_000)))) 
         frequence_map = np.array([lambda_count.get(i, 0) for i in range(self.color_resolution)])
 
-        switch_idx = self.get_color_idx(frequence_map/sum(frequence_map))
+        self.switch_idx = self.get_color_idx(frequence_map/sum(frequence_map))
 
-        gradient = self.generate_gradient(switch_idx, colors)
 
-        image = gradient[indexes].reshape((self.size, self.size, 3))
+    def apply_gradient(self, colors = None):
+        if colors is None:
+            colors = self.colors
+
+        gradient = []
+        colors = iter(colors)
+        for idx in self.switch_idx[1:]:
+            col = self.hex_to_RGB(next(colors))
+            gradient += [col]*(idx-len(gradient))
+        gradient += [gradient[-1]]
+        
+        r, g, b = zip(*gradient)
+
+        def smooth(y, box_pts):
+            box = np.ones(box_pts)/box_pts
+            y_smooth = np.convolve(y, box, mode="same")
+            return y_smooth
+        
+        # this coefficient changes how smooth the color transitions are
+        box_pts = 50
+        for _ in range(3):
+            r = smooth(r, box_pts)
+            g = smooth(g, box_pts)
+            b = smooth(b, box_pts)
+
+        r = np.rint(r).astype(int)
+        g = np.rint(g).astype(int)
+        b = np.rint(b).astype(int)
+
+        gradient = np.array(list(zip(r, g, b)))
+
+        image = gradient[self.indexes].reshape((self.size, self.size, 3))
         image = np.flip(image, axis=1)
 
         return image

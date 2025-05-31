@@ -33,7 +33,7 @@ class Config:
     MIN_FRACTAL_REGION_SIZE = (600, 600)
     APP_MIN_SIZE = (1100, 800)
     ZOOM_FACTOR = 0.98
-    ZOOM_TIMER_INTERVAL = 100
+    TIMER_INTERVAL = 100
     REGENERATION_DELAY = 300
     DEFAULT_COLORS = ["#000000", "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"]
 
@@ -60,7 +60,7 @@ class FractalWorker(QThread):
 # handle mouse clicks for zooming
 class FractalRegion(QLabel):
     zoom = Signal(float, float, float)
-    
+
     def __init__(self):
         super().__init__()
         self.BACKGROUND_TEXT = \
@@ -77,7 +77,7 @@ class FractalRegion(QLabel):
 
         self.zoom_timer = QTimer()
         self.zoom_timer.timeout.connect(self.continuous_zoom)
-        self.zoom_timer.setInterval(Config.ZOOM_TIMER_INTERVAL)
+        self.zoom_timer.setInterval(Config.TIMER_INTERVAL)
 
     def mousePressEvent(self, event):
         if event.button() in [Qt.LeftButton, Qt.RightButton]:
@@ -144,6 +144,15 @@ class FractalApp(QMainWindow):
         self.regeneration_timer = QTimer()
         self.regeneration_timer.setSingleShot(True)
         self.regeneration_timer.timeout.connect(lambda: self.start_image_gen(is_low_res=True))
+
+        self.setFocusPolicy(Qt.StrongFocus)
+
+        self.keys_pressed = set()
+    
+        # Timer for continuous z parameter changes
+        self.z_timer = QTimer()
+        self.z_timer.timeout.connect(self.continuous_z_change)
+        self.z_timer.setInterval(Config.TIMER_INTERVAL)
     
         # Initialize UI
         self.init_ui()
@@ -273,7 +282,8 @@ class FractalApp(QMainWindow):
             
             color_button = QPushButton(f"Color {i+1}")
             color_button.clicked.connect(lambda checked, idx=i: self.pick_color(idx))
-            
+            color_button.setFocusPolicy(Qt.NoFocus)
+
             color_row_layout.addWidget(color_input)
             color_row_layout.addWidget(color_button)
             
@@ -283,6 +293,29 @@ class FractalApp(QMainWindow):
             color_layout.addLayout(color_row_layout)
         
         layout.addWidget(color_group)
+
+    def create_buttons(self, layout):
+        # Real-time generation button
+        self.low_res_btn = QPushButton(self.LOW_RES_BTN_TEXT)
+        self.low_res_btn.clicked.connect(self.toggle_real_time_mode)
+        self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
+        self.low_res_btn.setFocusPolicy(Qt.NoFocus)
+        layout.addWidget(self.low_res_btn)
+        
+        # Generate high-res button
+        self.high_res_btn = QPushButton(self.HIGH_REST_BTN_TEXT)
+        self.high_res_btn.clicked.connect(lambda _: self.start_image_gen(is_low_res=False))
+        self.high_res_btn.setStyleSheet(self.HIGH_RES_BTN_STYLE)
+        self.high_res_btn.setFocusPolicy(Qt.NoFocus)
+        layout.addWidget(self.high_res_btn)
+        
+        # Save button (for high-res images only)
+        self.save_btn = QPushButton(self.SAVE_BTN_TEXT)
+        self.save_btn.clicked.connect(self.save_image)
+        self.save_btn.setStyleSheet(self.SAVE_BTN_STYLE)
+        self.high_res_btn.setFocusPolicy(Qt.NoFocus)
+        self.save_btn.setEnabled(False)
+        layout.addWidget(self.save_btn)
 
     def pick_color(self, index):
         current_color = QColor(self.color_inputs[index].text())
@@ -322,26 +355,6 @@ class FractalApp(QMainWindow):
         img = self.worker.fractal_computer.apply_gradient(colors)
         self.display_image(img)
 
-    def create_buttons(self, layout):
-        # Real-time generation button
-        self.low_res_btn = QPushButton(self.LOW_RES_BTN_TEXT)
-        self.low_res_btn.clicked.connect(self.toggle_real_time_mode)
-        self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
-        layout.addWidget(self.low_res_btn)
-        
-        # Generate high-res button
-        self.high_res_btn = QPushButton(self.HIGH_REST_BTN_TEXT)
-        self.high_res_btn.clicked.connect(lambda _: self.start_image_gen(is_low_res=False))
-        self.high_res_btn.setStyleSheet(self.HIGH_RES_BTN_STYLE)
-        layout.addWidget(self.high_res_btn)
-        
-        # Save button (for high-res images only)
-        self.save_btn = QPushButton(self.SAVE_BTN_TEXT)
-        self.save_btn.clicked.connect(self.save_image)
-        self.save_btn.setStyleSheet(self.SAVE_BTN_STYLE)
-        self.save_btn.setEnabled(False)
-        layout.addWidget(self.save_btn)
-
     # Correct bounds to ensure min < max
     def sanitize_inputs(self, changed_field):
         x_min = self.x_min.value()
@@ -362,13 +375,56 @@ class FractalApp(QMainWindow):
             self.y_max.setValue(y_min)
 
     # Handle parameter changes by regenerating the fractal if in real-time mode
-    def on_parameter_changed(self):
+    def on_parameter_changed(self, delay=Config.REGENERATION_DELAY):
         # determined the changed field by the sender
         self.sanitize_inputs(self.sender())
 
         if self.real_time_mode:
             self.regeneration_timer.stop()
-            self.regeneration_timer.start(Config.REGENERATION_DELAY)
+            self.regeneration_timer.start(delay)
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key in (Qt.Key_Space, Qt.Key_Backspace):
+            self.keys_pressed.add(key)
+            self.continuous_z_change()
+            if not self.z_timer.isActive():
+                self.z_timer.start()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event):
+        key = event.key()
+        if key in (Qt.Key_Space, Qt.Key_Backspace):
+            self.keys_pressed.discard(key)
+            if not {Qt.Key_Space, Qt.Key_Backspace} & self.keys_pressed:
+                self.z_timer.stop()
+            event.accept()
+        else:
+            super().keyReleaseEvent(event)
+
+    def continuous_z_change(self):
+        if not self.real_time_mode:
+            self.z_timer.stop()
+            return
+
+        if Qt.Key_Space in self.keys_pressed:
+            self.change_z(0.01)
+        elif Qt.Key_Backspace in self.keys_pressed:
+            self.change_z(-0.01)
+        else:
+            # Stop timer if no keys are pressed
+            self.z_timer.stop()
+
+    def change_z(self, delta):
+        current_z = self.z.value()
+        new_z = (current_z + delta) % 4
+        if new_z < 0:
+            new_z = 4 + new_z
+        
+        self.z.setValue(new_z)
+        # this will trigger on_parameter_changed automatically
 
     # extract parameters from GUI fields
     def get_fractal_params(self, is_low_res=True):

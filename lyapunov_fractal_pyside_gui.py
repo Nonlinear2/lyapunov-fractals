@@ -64,10 +64,10 @@ class FractalRegion(QLabel):
     def __init__(self):
         super().__init__()
         self.BACKGROUND_TEXT = \
-        "Start real-time generation first." \
-        "Hold the left mouse button to zoom in, and the right mouse button to zoom out." \
-        "Press Space to increase the Z coordinate, Backspace to decrease it." \
-        "Press C to cycle the pattern."
+        "Start real-time generation first.\n" \
+        "Hold the left mouse button to zoom in, and the right mouse button to zoom out.\n" \
+        "Press Space to increase the Z coordinate, Backspace to decrease it.\n" \
+        "Press C to cycle the pattern.\n"
 
         self.setMinimumSize(*Config.MIN_FRACTAL_REGION_SIZE)
         self.setStyleSheet("background-color: black; font: 15pt;")

@@ -12,6 +12,7 @@ from numba.cuda import get_current_device
 from lyapunov_core import ComputeFractals
 from utils import valid_hex_string
 from dataclasses import dataclass
+from utils import ColorPalettes
 
 def make_spinbox(value, singleStep, minimum, maximum):
     box = QSpinBox()
@@ -32,10 +33,11 @@ def make_dspinbox(value, singleStep, minimum, maximum, decimals):
 class Config:
     MIN_FRACTAL_REGION_SIZE = (600, 600)
     APP_MIN_SIZE = (1100, 800)
+    LEFT_PANEL_MAX_WIDTH = 350
     ZOOM_FACTOR = 0.98
     TIMER_INTERVAL = 100
     REGENERATION_DELAY = 300
-    DEFAULT_COLORS = ["#000000", "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"]
+    DEFAULT_COLORS = ColorPalettes.red_orange_yellow
 
 # worker thread to avoid blocking the GUI
 class FractalWorker(QThread):
@@ -167,7 +169,7 @@ class FractalApp(QMainWindow):
         main_layout = QHBoxLayout(central_widget)
         
         left_panel = QWidget()
-        left_panel.setMaximumWidth(350)
+        left_panel.setMaximumWidth(Config.LEFT_PANEL_MAX_WIDTH)
         left_layout = QVBoxLayout(left_panel)
         
         self.create_top_fields(left_layout)

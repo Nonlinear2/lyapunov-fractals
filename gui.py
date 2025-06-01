@@ -21,14 +21,14 @@ GENERATING = 3
 HIGH_RES = 4
 
 
-def make_spinbox(value, singleStep, minimum, maximum):
+def make_integer_spinbox(value, singleStep, minimum, maximum):
     box = QSpinBox()
     box.setRange(minimum, maximum)
     box.setSingleStep(singleStep)
     box.setValue(value)
     return box
 
-def make_dspinbox(value, singleStep, minimum, maximum, decimals):
+def make_float_spinbox(value, singleStep, minimum, maximum, decimals):
     box = QDoubleSpinBox()
     box.setRange(minimum, maximum)
     box.setDecimals(decimals)
@@ -250,7 +250,7 @@ class FractalApp(QMainWindow):
             grid_layout.addWidget(QLabel(label_text), i, 0)
             grid_layout.addWidget(spin_box, i, 1)
 
-        self.color_res = make_spinbox(value=1900, singleStep=50, minimum=50, maximum=10_000)
+        self.color_res = make_float_spinbox(value=1900, singleStep=50, minimum=50, maximum=10_000)
         self.color_res.valueChanged.connect(self.on_parameter_changed)
 
         grid_layout.addWidget(QLabel("Color Resolution"), 6, 0)
@@ -267,14 +267,14 @@ class FractalApp(QMainWindow):
         res_layout.addWidget(realtime_label, 0, 0, 1, 2)
         
         res_layout.addWidget(QLabel("Size:"), 1, 0)
-        self.low_res_size = make_spinbox(value=Config.DEFAULT_REAL_TIME_SIZE,
+        self.low_res_size = make_float_spinbox(value=Config.DEFAULT_REAL_TIME_SIZE,
                                          singleStep=50, minimum=100, maximum=1500)
         self.low_res_size.setKeyboardTracking(False)
         self.low_res_size.valueChanged.connect(self.on_parameter_changed)
         res_layout.addWidget(self.low_res_size, 1, 1)
 
         res_layout.addWidget(QLabel("Iterations:"), 2, 0)
-        self.low_res_iter = make_spinbox(value=Config.DEFAULT_REAL_TIME_ITER,
+        self.low_res_iter = make_float_spinbox(value=Config.DEFAULT_REAL_TIME_ITER,
                                          singleStep=50, minimum=50, maximum=5000)
         self.low_res_iter.setKeyboardTracking(False)
         self.low_res_iter.valueChanged.connect(self.on_parameter_changed)
@@ -285,13 +285,13 @@ class FractalApp(QMainWindow):
         res_layout.addWidget(high_res_label, 3, 0, 1, 2)
         
         res_layout.addWidget(QLabel("Size:"), 4, 0)
-        self.high_res_size = make_spinbox(value=min(Config.DEFAULT_HIGH_RES_SIZE, self.max_image_size), singleStep=50,
+        self.high_res_size = make_float_spinbox(value=min(Config.DEFAULT_HIGH_RES_SIZE, self.max_image_size), singleStep=50,
                                           minimum=500, maximum=self.max_image_size)
         self.high_res_size.setKeyboardTracking(False)
         res_layout.addWidget(self.high_res_size, 4, 1)
         
         res_layout.addWidget(QLabel("Iterations:"), 5, 0)
-        self.high_res_iter = make_spinbox(value=Config.DEFAULT_HIGH_RES_ITER, singleStep=50, minimum=500, maximum=50_000)
+        self.high_res_iter = make_float_spinbox(value=Config.DEFAULT_HIGH_RES_ITER, singleStep=50, minimum=500, maximum=50_000)
         self.high_res_iter.setKeyboardTracking(False)
         res_layout.addWidget(self.high_res_iter, 5, 1)
         

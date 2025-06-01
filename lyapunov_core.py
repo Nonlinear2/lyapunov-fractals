@@ -27,14 +27,13 @@ class ComputeFractals:
     # @param color_resolution how many different shades of self.colors are used
     # @param pattern a string of x, y, and z. the pattern defines which fractal is generated.
     # @num_iter at which precision are the pixel values computed.
-    def __init__(self, verbose = False):
-        self.verbose = verbose
+    def __init__(self):
 
         self.gpu = cuda.get_current_device()
 
-        if (self.verbose):
-            print("used GPU:", self.gpu.name.decode("utf-8"))
-        
+        self.progress_callback = None
+        self.total_stage_number = 4
+
         self.set_parameters(**ComputeFractals.DEFAULT_PARAMS)
 
     def set_parameters(self, **kwargs):
@@ -87,6 +86,9 @@ class ComputeFractals:
         assert set(list(self.pattern)).issubset({"x", "y", "z"})
         assert all([(v >= 0) and (v <= 4) for v in [self.x_min, self.x_max, self.y_min, self.y_max, self.z]])
         assert self.color_resolution > 1
+
+    def set_progress_callback(self, progress_callback):
+        self.progress_callback = progress_callback
 
     def get_color_idx(self, normalised_graph):
         split = np.linspace(0, 1, len(self.colors)+1)[:-1]
@@ -152,24 +154,24 @@ class ComputeFractals:
             print("grid stride loops not implemented")
             exit()
 
+        if self.progress_callback != None:
+            self.progress_callback("Copying coordinates to the GPU", 1)
+    
         self.dev_output.copy_to_device(self.dev_x_space)
 
-        if (self.verbose):
-            print("copied data to GPU, executing fractal kernel")
+        if self.progress_callback != None:
+            self.progress_callback("Executing fractal kernel (may take a while)", 2)
 
         self.fractal_kernel[blockspergrid, threadsperblock](self.dev_output, self.dev_y_space, self.dev_z)
         cuda.synchronize()
 
-        if (self.verbose):
-            print("fractal computed, copying data back to cpu")
+        if self.progress_callback != None:
+            self.progress_callback("Copying data back to the CPU", 3)
 
         self.dev_output.copy_to_host(self.output)
 
-        if (self.verbose):
-            print("data copied")
-        
-        if (self.verbose):
-            print("preparing color gradient")
+        if self.progress_callback != None:
+            self.progress_callback("Applying color gradient", 4)
 
         lambda_min = np.amin(self.output)
         scaling_factor = np.amax(self.output) - lambda_min

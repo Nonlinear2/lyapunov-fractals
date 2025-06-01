@@ -14,6 +14,13 @@ from utils import valid_hex_string
 from dataclasses import dataclass
 from utils import ColorPalettes
 
+# enum for GUI state
+IDLE = 1
+REAL_TIME = 2
+GENERATING = 3
+HIGH_RES = 4
+
+
 def make_spinbox(value, singleStep, minimum, maximum):
     box = QSpinBox()
     box.setRange(minimum, maximum)
@@ -42,10 +49,13 @@ class Config:
 # worker thread to avoid blocking the GUI
 class FractalWorker(QThread):
     finished = Signal(np.ndarray)
+    stage_updated = Signal(str, int)
 
     def __init__(self):
         super().__init__()
-        self.fractal_computer = ComputeFractals(verbose=False)
+        self.fractal_computer = ComputeFractals()
+        self.total_stage_number = self.fractal_computer.total_stage_number
+        self.fractal_computer.set_progress_callback(self.stage_updated.emit)
 
     def set_parameters(self, fractal_params):
         self.fractal_computer.set_parameters(**fractal_params)
@@ -130,7 +140,7 @@ class FractalApp(QMainWindow):
         # Initialize variables
         self.current_high_res_image = None
         self.worker = None
-        self.real_time_mode = False  # Track current mode
+        self.mode = IDLE
 
         self.z = None
         self.x_min = None
@@ -141,6 +151,7 @@ class FractalApp(QMainWindow):
         self.LOW_RES_BTN_TEXT = "Start Real-Time Generation"
         self.LOW_RES_BTN_STYLE = "QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 10px; }"     
         self.HIGH_RES_BTN_TEXT = "Generate High-Res Image"
+        self.GENERATING_BTN_TEXT = "Generating High-Res Image..."
         self.HIGH_RES_BTN_STYLE = "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }"
         self.SAVE_BTN_TEXT = "Save High-Res Image"
         self.SAVE_BTN_STYLE = "QPushButton { background-color: #FF9800; color: white; padding: 8px; }"
@@ -149,12 +160,13 @@ class FractalApp(QMainWindow):
         self.max_image_size = int((gpu.MAX_GRID_DIM_X * gpu.MAX_THREADS_PER_BLOCK)**0.5)
 
         self.worker = FractalWorker()
-        self.worker.finished.connect(lambda img: self.on_image_generated(img))
+        self.worker.finished.connect(self.on_image_generated)
+        self.worker.stage_updated.connect(self.on_progress_updated)
 
         # timer to debounce fractal generation
         self.regeneration_timer = QTimer()
         self.regeneration_timer.setSingleShot(True)
-        self.regeneration_timer.timeout.connect(lambda: self.start_image_gen())
+        self.regeneration_timer.timeout.connect(self.start_image_gen)
 
         self.setFocusPolicy(Qt.StrongFocus)
 
@@ -164,7 +176,12 @@ class FractalApp(QMainWindow):
         self.z_timer = QTimer()
         self.z_timer.timeout.connect(self.continuous_z_change)
         self.z_timer.setInterval(Config.TIMER_INTERVAL)
-    
+
+        self.loading_animation_frames = ['|', '/', '-', '\\']
+        self.loading_animation_index = 0
+        self.loading_animation_timer = QTimer(self)
+        self.loading_animation_timer.timeout.connect(self.update_loading_text)
+
         # Initialize UI
         self.init_ui()
         
@@ -309,14 +326,24 @@ class FractalApp(QMainWindow):
         # Real-time generation button
         self.low_res_btn = QPushButton(self.LOW_RES_BTN_TEXT)
         # toggle real time mode
-        self.low_res_btn.clicked.connect(lambda: self.set_real_time_mode(not self.real_time_mode))
+        self.low_res_btn.clicked.connect(lambda:
+            self.set_mode({IDLE: REAL_TIME,
+                           REAL_TIME: IDLE,
+                           HIGH_RES: REAL_TIME,
+                           GENERATING: REAL_TIME
+                        }[self.mode]
+            )
+        )
         self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
         self.low_res_btn.setFocusPolicy(Qt.NoFocus)
         layout.addWidget(self.low_res_btn)
         
         # Generate high-res button
         self.high_res_btn = QPushButton(self.HIGH_RES_BTN_TEXT)
-        self.high_res_btn.clicked.connect(self.on_generate_high_res_pressed)
+        def on_high_res_clicked():
+            self.set_mode(GENERATING)
+            self.start_image_gen()
+        self.high_res_btn.clicked.connect(on_high_res_clicked)
         self.high_res_btn.setStyleSheet(self.HIGH_RES_BTN_STYLE)
         self.high_res_btn.setFocusPolicy(Qt.NoFocus)
         layout.addWidget(self.high_res_btn)
@@ -330,6 +357,9 @@ class FractalApp(QMainWindow):
         layout.addWidget(self.save_btn)
 
     def pick_color(self, index):
+        if self.mode not in [IDLE, REAL_TIME, HIGH_RES]:
+            return
+
         current_color = QColor(self.color_inputs[index].text())
         
         dialog = QColorDialog(current_color, self)
@@ -346,11 +376,11 @@ class FractalApp(QMainWindow):
             self.set_image_color(index, current_color)
 
     def set_image_color(self, index, color):
-        if color.isValid():
+        if color.isValid() and self.mode in [REAL_TIME, HIGH_RES]:
             colors = list(map(lambda x: x.text(), self.color_inputs))
             colors[index] = color.name()
             img = self.worker.fractal_computer.apply_gradient(colors)
-            if not self.real_time_mode:
+            if self.mode == HIGH_RES:
                 self.current_high_res_image = img
             self.display_image(img, size=self.fractal_region.size())
 
@@ -375,10 +405,9 @@ class FractalApp(QMainWindow):
 
     # Handle parameter changes by regenerating the fractal if in real-time mode
     def on_parameter_changed(self, *, delay=Config.REGENERATION_DELAY):
-        # determined the changed field by the sender
         self.sanitize_inputs(self.sender())
 
-        if self.real_time_mode:
+        if self.mode == REAL_TIME:
             self.regeneration_timer.stop()
             self.regeneration_timer.start(delay)
 
@@ -406,7 +435,7 @@ class FractalApp(QMainWindow):
             super().keyReleaseEvent(event)
 
     def continuous_z_change(self):
-        if not self.real_time_mode:
+        if self.mode != REAL_TIME:
             self.z_timer.stop()
             return
 
@@ -418,11 +447,9 @@ class FractalApp(QMainWindow):
         self.z.setValue((self.z.value() + delta) % 4)
         self.z.blockSignals(False)
 
-        # Trigger immediate regeneration without delay
-        if self.real_time_mode:
-            self.regeneration_timer.stop()  # cancel any pending regeneration
-            self.start_image_gen()
-        
+        self.regeneration_timer.stop()  # cancel any pending regeneration
+        self.start_image_gen()
+
     # extract parameters from GUI fields
     def get_fractal_params(self):
         colors = []
@@ -435,10 +462,10 @@ class FractalApp(QMainWindow):
             colors = ["#000000"]  # Default color if none provided
         
         # Choose resolution settings based on mode
-        if self.real_time_mode:
+        if self.mode == REAL_TIME:
             size = self.low_res_size.value()
             iterations = self.low_res_iter.value()
-        else:
+        elif self.mode == HIGH_RES:
             size = self.high_res_size.value()
             iterations = self.high_res_iter.value()
         
@@ -457,14 +484,9 @@ class FractalApp(QMainWindow):
 
         return params
 
-    def on_generate_high_res_pressed(self):
-        self.set_real_time_mode(False)
-        self.start_image_gen()
-
-    def set_real_time_mode(self, value):
-        if value:
-            self.real_time_mode = True
-
+    def set_mode(self, mode):
+        self.mode = mode
+        if mode == REAL_TIME:
             self.save_btn.setEnabled(False)
 
             # Update button to show exit option
@@ -474,19 +496,34 @@ class FractalApp(QMainWindow):
 
             self.start_image_gen()
 
-        else:
-            self.real_time_mode = False
+        # Stop any pending regeneration timer
+        self.regeneration_timer.stop()
+        # Clear the display
+        self.fractal_region.clear()
 
-            # Stop any pending regeneration timer
-            self.regeneration_timer.stop()
-
-            # Clear the display
-            self.fractal_region.clear()
+        if mode == IDLE:
             self.fractal_region.setText(self.fractal_region.BACKGROUND_TEXT)
 
             # Update button text
             self.low_res_btn.setText(self.LOW_RES_BTN_TEXT)
             self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
+        
+        elif mode == GENERATING:
+            self.fractal_region.setText(self.fractal_region.BACKGROUND_TEXT)
+
+            # Update button text
+            self.low_res_btn.setText(self.LOW_RES_BTN_TEXT)
+            self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE) 
+
+            self.high_res_btn.setText(self.GENERATING_BTN_TEXT)
+
+        elif mode == HIGH_RES:
+            # Re-enable generate button
+            self.high_res_btn.setText(self.HIGH_RES_BTN_TEXT)
+            self.high_res_btn.setEnabled(True)
+
+            # enable save button
+            self.save_btn.setEnabled(True)
     
 
     def start_image_gen(self):
@@ -498,9 +535,13 @@ class FractalApp(QMainWindow):
         self.worker.start()
 
     def on_image_generated(self, img):
-        if self.real_time_mode:
+        assert self.mode not in [IDLE, GENERATING]
+
+        if self.mode == REAL_TIME:
             self.display_image(img, size=self.fractal_region.size())
-        else:
+        elif self.mode == GENERATING:
+            self.set_mode(HIGH_RES)
+
             self.current_high_res_image = img
             # Show high-res image in new window using PIL
             image = Image.fromarray(np.swapaxes(img.astype(np.uint8), 0, 1))
@@ -508,12 +549,18 @@ class FractalApp(QMainWindow):
 
             self.display_image(img, size=self.fractal_region.size())
 
-            # Re-enable generate button
-            self.high_res_btn.setText(self.HIGH_RES_BTN_TEXT)
-            self.high_res_btn.setEnabled(True)
+    def on_progress_updated(self, info_string, stage):
+        if self.mode == GENERATING:
+            self.info_string = info_string
+            self.generation_stage = stage
+            self.loading_animation_timer.start(100)
 
-            # enable save button
-            self.save_btn.setEnabled(True)
+    def update_loading_text(self):
+        frame = self.loading_animation_frames[self.index]
+        self.index = (self.index + 1) % len(self.loading_animation_frames)
+        self.fractal_region.setText(
+            f"{self.generation_stage}/{self.worker.total_stage_number}: {self.info_string} {frame}"
+        )
 
     def display_image(self, img, size=None):
         img = np.ascontiguousarray(np.swapaxes(img.astype(np.uint8), 0, 1))
@@ -527,7 +574,7 @@ class FractalApp(QMainWindow):
         self.fractal_region.setPixmap(pixmap)
 
     def on_zoom(self, x_ratio, y_ratio, zoom_proportion):
-        if not self.real_time_mode:
+        if self.mode != REAL_TIME:
             return
 
         new_bounds = self.zoom_to(x_ratio, y_ratio, zoom_proportion)
@@ -592,7 +639,7 @@ class FractalApp(QMainWindow):
 
     # save the current high resolution image
     def save_image(self):
-        if self.current_high_res_image is not None:
+        if self.mode == HIGH_RES:
             try:
                 colors = [color_input.text().replace('#', '').lower() for color_input in self.color_inputs]
 

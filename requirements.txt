@@ -1,4 +1,4 @@
-numba==0.60.0
+numba-cuda==0.13.0
 numpy==1.25.0
 Pillow==11.2.1
 PySide6==6.9.0

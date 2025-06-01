@@ -7,7 +7,7 @@ This is a simple python project to render lyapunov fractals. It relies on numba 
 ## Requirements
 
 - the [numba package with cuda](https://numba.pydata.org/numba-doc/latest/cuda/overview.html#requirements).
-- numpy, pygame and pillow, that you can install with `pip install numpy pygame pillow`
+
 
 and that's it!
 

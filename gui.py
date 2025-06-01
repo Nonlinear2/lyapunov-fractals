@@ -45,6 +45,10 @@ class Config:
     TIMER_INTERVAL = 100
     REGENERATION_DELAY = 300
     DEFAULT_COLORS = ColorPalettes.red_orange_yellow
+    DEFAULT_REAL_TIME_SIZE = 500
+    DEFAULT_REAL_TIME_ITER = 500
+    DEFAULT_HIGH_RES_SIZE = 2000
+    DEFAULT_HIGH_RES_ITER = 4000
 
 # worker thread to avoid blocking the GUI
 class FractalWorker(QThread):
@@ -263,13 +267,15 @@ class FractalApp(QMainWindow):
         res_layout.addWidget(realtime_label, 0, 0, 1, 2)
         
         res_layout.addWidget(QLabel("Size:"), 1, 0)
-        self.low_res_size = make_spinbox(value=300, singleStep=50, minimum=100, maximum=1500)
+        self.low_res_size = make_spinbox(value=Config.DEFAULT_REAL_TIME_SIZE,
+                                         singleStep=50, minimum=100, maximum=1500)
         self.low_res_size.setKeyboardTracking(False)
         self.low_res_size.valueChanged.connect(self.on_parameter_changed)
         res_layout.addWidget(self.low_res_size, 1, 1)
 
         res_layout.addWidget(QLabel("Iterations:"), 2, 0)
-        self.low_res_iter = make_spinbox(value=200, singleStep=50, minimum=50, maximum=5000)
+        self.low_res_iter = make_spinbox(value=Config.DEFAULT_REAL_TIME_ITER,
+                                         singleStep=50, minimum=50, maximum=5000)
         self.low_res_iter.setKeyboardTracking(False)
         self.low_res_iter.valueChanged.connect(self.on_parameter_changed)
         res_layout.addWidget(self.low_res_iter, 2, 1)
@@ -279,13 +285,13 @@ class FractalApp(QMainWindow):
         res_layout.addWidget(high_res_label, 3, 0, 1, 2)
         
         res_layout.addWidget(QLabel("Size:"), 4, 0)
-        self.high_res_size = make_spinbox(value=min(1200, self.max_image_size), singleStep=50,
+        self.high_res_size = make_spinbox(value=min(Config.DEFAULT_HIGH_RES_SIZE, self.max_image_size), singleStep=50,
                                           minimum=500, maximum=self.max_image_size)
         self.high_res_size.setKeyboardTracking(False)
         res_layout.addWidget(self.high_res_size, 4, 1)
         
         res_layout.addWidget(QLabel("Iterations:"), 5, 0)
-        self.high_res_iter = make_spinbox(value=2000, singleStep=50, minimum=500, maximum=50_000)
+        self.high_res_iter = make_spinbox(value=Config.DEFAULT_HIGH_RES_ITER, singleStep=50, minimum=500, maximum=50_000)
         self.high_res_iter.setKeyboardTracking(False)
         res_layout.addWidget(self.high_res_iter, 5, 1)
         

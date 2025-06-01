@@ -6,24 +6,32 @@ This is a simple python project to render lyapunov fractals. It relies on numba 
 
 ## Requirements
 
-- the [numba package with cuda](https://numba.pydata.org/numba-doc/latest/cuda/overview.html#requirements).
+As this project uses numba-cuda, you need a CUDA-enabled NVIDIA graphics card with Compute Capability 3.5 or greater.
 
+## Installation
+Optionally, you can create a virtual environement with
+```
+python -m venv .venv
+.venv\Scripts\activate
+```
 
-and that's it!
+Then run 
+```pip install -r requirements.txt```
+to install all the necessary packages.
 
 ## Features
+### Interactive pyside window
+Running the file `fractal_zoom.py` opens a window where you can modify the fractal parameters:
+- Press the `left mouse button` to zoom
+- Press the `right mouse button` to dezoom
+- Press `space` to increase the $z$ coordinate of the fractal
+- Press `backspace` to decrease the $z$ coordinate of the fractal
+- Press `c` to cycle the fractal pattern.
+
 ### Image generation
 Running the file `generate_fractal_image.py` creates an image of a fractal and displays it to the screen.
 ### Video generation
 Running the file `generate_fractal_video.py` creates and stores a gif cycling through slices of a 3D lyapunov fractal in the $z$ direction.
-### Interactive pygame window
-Running the file `fractal_zoom.py` opens a pygame window with a fractal:
-- Press the `left mouse button` to zoom
-- Press the `right mouse button` to dezoom
-- Press `tab` to cycle through the $z$ values of the fractal
-- Press `space` to show the current coordinates.
-- Press `s` to generate a higher resolution image of the current fractal, and press `s` again to save the image.
-- Press `c` to cycle the pattern.
 
 # Details
 The main class is `ComputeFractals`. Its parameters are the following:

@@ -84,10 +84,8 @@ class FractalRegion(QLabel):
         self.zoom_timer.setInterval(Config.TIMER_INTERVAL)
 
     def resizeEvent(self, event):
-        """Override resize event to maintain square aspect ratio"""
         super().resizeEvent(event)
-        
-        # Get the smaller dimension and make both dimensions equal to it
+
         size = min(event.size().width(), event.size().height())
         self.setFixedSize(size, size)
 
@@ -354,7 +352,7 @@ class FractalApp(QMainWindow):
             img = self.worker.fractal_computer.apply_gradient(colors)
             if not self.real_time_mode:
                 self.current_high_res_image = img
-            self.display_image(img)
+            self.display_image(img, size=self.fractal_region.size())
 
     # Correct bounds to ensure min < max
     def sanitize_inputs(self, changed_field):
@@ -501,7 +499,7 @@ class FractalApp(QMainWindow):
 
     def on_image_generated(self, img):
         if self.real_time_mode:
-            self.display_image(img)
+            self.display_image(img, size=self.fractal_region.size())
         else:
             self.current_high_res_image = img
             # Show high-res image in new window using PIL

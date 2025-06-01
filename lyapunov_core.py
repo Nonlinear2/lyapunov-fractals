@@ -33,7 +33,7 @@ class ComputeFractals:
         self.gpu = cuda.get_current_device()
 
         if (self.verbose):
-            print(f"used GPU: {self.gpu.name.decode("utf-8")}")
+            print("used GPU:", self.gpu.name.decode("utf-8"))
         
         self.set_parameters(**ComputeFractals.DEFAULT_PARAMS)
 

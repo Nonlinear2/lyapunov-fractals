@@ -32,7 +32,7 @@ def make_dspinbox(value, singleStep, minimum, maximum, decimals):
 @dataclass
 class Config:
     MIN_FRACTAL_REGION_SIZE = (600, 600)
-    APP_MIN_SIZE = (1100, 800)
+    APP_MIN_SIZE = (1025, 800)
     LEFT_PANEL_MAX_WIDTH = 350
     ZOOM_FACTOR = 0.98
     TIMER_INTERVAL = 100
@@ -82,6 +82,14 @@ class FractalRegion(QLabel):
         self.zoom_timer = QTimer()
         self.zoom_timer.timeout.connect(self.continuous_zoom)
         self.zoom_timer.setInterval(Config.TIMER_INTERVAL)
+
+    def resizeEvent(self, event):
+        """Override resize event to maintain square aspect ratio"""
+        super().resizeEvent(event)
+        
+        # Get the smaller dimension and make both dimensions equal to it
+        size = min(event.size().width(), event.size().height())
+        self.setFixedSize(size, size)
 
     def mousePressEvent(self, event):
         if event.button() in [Qt.LeftButton, Qt.RightButton]:
@@ -191,7 +199,7 @@ class FractalApp(QMainWindow):
         scroll_area = QScrollArea()
         scroll_area.setWidget(self.fractal_region)
         scroll_area.setWidgetResizable(True)
-        
+
         # Add panels to main layout
         main_layout.addWidget(left_panel)
         main_layout.addWidget(scroll_area, 1)

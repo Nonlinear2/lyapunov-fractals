@@ -141,6 +141,7 @@ class FractalApp(QMainWindow):
         self.max_image_size = int((gpu.MAX_GRID_DIM_X * gpu.MAX_THREADS_PER_BLOCK)**0.5)
 
         self.worker = FractalWorker()
+        self.worker.finished.connect(lambda img: self.on_image_generated(img))
 
         # timer to debounce fractal generation
         self.regeneration_timer = QTimer()
@@ -486,8 +487,6 @@ class FractalApp(QMainWindow):
 
         params = self.get_fractal_params()
         self.worker.set_parameters(params)
-        # Start worker thread
-        self.worker.finished.connect(lambda img: self.on_image_generated(img))
         self.worker.start()
 
     def on_image_generated(self, img):
@@ -518,8 +517,6 @@ class FractalApp(QMainWindow):
             pixmap = pixmap.scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
         self.fractal_region.setPixmap(pixmap)
-
-        # self.fractal_region.resize(pixmap.size())
 
     def on_zoom(self, x_ratio, y_ratio, zoom_proportion):
         if not self.real_time_mode:

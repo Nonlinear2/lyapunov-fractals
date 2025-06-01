@@ -452,6 +452,7 @@ class FractalApp(QMainWindow):
 
     # extract parameters from GUI fields
     def get_fractal_params(self):
+        assert self.mode in [GENERATING, REAL_TIME]
         colors = []
         for color_input in self.color_inputs:
             color = color_input.text().lower()
@@ -465,10 +466,10 @@ class FractalApp(QMainWindow):
         if self.mode == REAL_TIME:
             size = self.low_res_size.value()
             iterations = self.low_res_iter.value()
-        elif self.mode == HIGH_RES:
+        elif self.mode == GENERATING:
             size = self.high_res_size.value()
             iterations = self.high_res_iter.value()
-        
+
         params = {
             "pattern": self.pattern.text(),
             "x_min": self.x_min.value(),
@@ -518,6 +519,8 @@ class FractalApp(QMainWindow):
             self.high_res_btn.setText(self.GENERATING_BTN_TEXT)
 
         elif mode == HIGH_RES:
+            self.loading_animation_timer.stop()
+
             # Re-enable generate button
             self.high_res_btn.setText(self.HIGH_RES_BTN_TEXT)
             self.high_res_btn.setEnabled(True)
@@ -527,6 +530,7 @@ class FractalApp(QMainWindow):
     
 
     def start_image_gen(self):
+        assert self.mode in [REAL_TIME, GENERATING]
         if self.worker.isRunning():
             return
 
@@ -535,7 +539,7 @@ class FractalApp(QMainWindow):
         self.worker.start()
 
     def on_image_generated(self, img):
-        assert self.mode not in [IDLE, GENERATING]
+        assert self.mode not in [IDLE, HIGH_RES]
 
         if self.mode == REAL_TIME:
             self.display_image(img, size=self.fractal_region.size())
@@ -556,8 +560,8 @@ class FractalApp(QMainWindow):
             self.loading_animation_timer.start(100)
 
     def update_loading_text(self):
-        frame = self.loading_animation_frames[self.index]
-        self.index = (self.index + 1) % len(self.loading_animation_frames)
+        frame = self.loading_animation_frames[self.loading_animation_index]
+        self.loading_animation_index = (self.loading_animation_index + 1) % len(self.loading_animation_frames)
         self.fractal_region.setText(
             f"{self.generation_stage}/{self.worker.total_stage_number}: {self.info_string} {frame}"
         )

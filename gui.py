@@ -21,20 +21,27 @@ GENERATING = 3
 HIGH_RES = 4
 
 
-def make_spinbox(value, singleStep, minimum, maximum):
+def make_integer_spinbox(value, singleStep, minimum, maximum):
     box = QSpinBox()
     box.setRange(minimum, maximum)
     box.setSingleStep(singleStep)
     box.setValue(value)
     return box
 
-def make_dspinbox(value, singleStep, minimum, maximum, decimals):
+def make_float_spinbox(value, singleStep, minimum, maximum, decimals):
     box = QDoubleSpinBox()
     box.setRange(minimum, maximum)
     box.setDecimals(decimals)
     box.setSingleStep(singleStep)
     box.setValue(value)
     return box
+
+def make_button(text, style, callback, focus_policy=Qt.NoFocus):
+    button = QPushButton(text)
+    button.clicked.connect(callback)
+    button.setStyleSheet(style)
+    button.setFocusPolicy(focus_policy)
+    return button
 
 @dataclass
 class Config:
@@ -242,7 +249,7 @@ class FractalApp(QMainWindow):
         grid_layout.addWidget(self.pattern, 0, 1)
 
         for i, (field_name, (label_text, default_value)) in enumerate(coords_fields.items(), 1):
-            spin_box = make_dspinbox(value=default_value, singleStep=0.1,  minimum=0, maximum=4, decimals=5)
+            spin_box = make_float_spinbox(value=default_value, singleStep=0.1,  minimum=0, maximum=4, decimals=5)
             spin_box.valueChanged.connect(self.on_parameter_changed)
 
             setattr(self, field_name, spin_box)
@@ -250,7 +257,7 @@ class FractalApp(QMainWindow):
             grid_layout.addWidget(QLabel(label_text), i, 0)
             grid_layout.addWidget(spin_box, i, 1)
 
-        self.color_res = make_spinbox(value=1900, singleStep=50, minimum=50, maximum=10_000)
+        self.color_res = make_integer_spinbox(value=1900, singleStep=50, minimum=50, maximum=10_000)
         self.color_res.valueChanged.connect(self.on_parameter_changed)
 
         grid_layout.addWidget(QLabel("Color Resolution"), 6, 0)
@@ -267,14 +274,14 @@ class FractalApp(QMainWindow):
         res_layout.addWidget(realtime_label, 0, 0, 1, 2)
         
         res_layout.addWidget(QLabel("Size:"), 1, 0)
-        self.low_res_size = make_spinbox(value=Config.DEFAULT_REAL_TIME_SIZE,
+        self.low_res_size = make_integer_spinbox(value=Config.DEFAULT_REAL_TIME_SIZE,
                                          singleStep=50, minimum=100, maximum=1500)
         self.low_res_size.setKeyboardTracking(False)
         self.low_res_size.valueChanged.connect(self.on_parameter_changed)
         res_layout.addWidget(self.low_res_size, 1, 1)
 
         res_layout.addWidget(QLabel("Iterations:"), 2, 0)
-        self.low_res_iter = make_spinbox(value=Config.DEFAULT_REAL_TIME_ITER,
+        self.low_res_iter = make_integer_spinbox(value=Config.DEFAULT_REAL_TIME_ITER,
                                          singleStep=50, minimum=50, maximum=5000)
         self.low_res_iter.setKeyboardTracking(False)
         self.low_res_iter.valueChanged.connect(self.on_parameter_changed)
@@ -285,13 +292,14 @@ class FractalApp(QMainWindow):
         res_layout.addWidget(high_res_label, 3, 0, 1, 2)
         
         res_layout.addWidget(QLabel("Size:"), 4, 0)
-        self.high_res_size = make_spinbox(value=min(Config.DEFAULT_HIGH_RES_SIZE, self.max_image_size), singleStep=50,
-                                          minimum=500, maximum=self.max_image_size)
+        self.high_res_size = make_integer_spinbox(value=min(Config.DEFAULT_HIGH_RES_SIZE, self.max_image_size),
+                                                  singleStep=50, minimum=500, maximum=self.max_image_size)
         self.high_res_size.setKeyboardTracking(False)
         res_layout.addWidget(self.high_res_size, 4, 1)
         
         res_layout.addWidget(QLabel("Iterations:"), 5, 0)
-        self.high_res_iter = make_spinbox(value=Config.DEFAULT_HIGH_RES_ITER, singleStep=50, minimum=500, maximum=50_000)
+        self.high_res_iter = make_integer_spinbox(value=Config.DEFAULT_HIGH_RES_ITER, singleStep=50,
+                                                  minimum=500, maximum=50_000)
         self.high_res_iter.setKeyboardTracking(False)
         res_layout.addWidget(self.high_res_iter, 5, 1)
         
@@ -329,37 +337,34 @@ class FractalApp(QMainWindow):
         layout.addWidget(color_group)
 
     def create_buttons(self, layout):
-        # Real-time generation button
-        self.low_res_btn = QPushButton(self.LOW_RES_BTN_TEXT)
-        # toggle real time mode
-        self.low_res_btn.clicked.connect(lambda:
-            self.set_mode({IDLE: REAL_TIME,
-                           REAL_TIME: IDLE,
-                           HIGH_RES: REAL_TIME,
-                           GENERATING: REAL_TIME
-                        }[self.mode]
-            )
+        self.low_res_btn = make_button(
+            self.LOW_RES_BTN_TEXT, 
+            self.LOW_RES_BTN_STYLE,
+            lambda: self.set_mode({IDLE: REAL_TIME,
+                                   REAL_TIME: IDLE,
+                                   HIGH_RES: REAL_TIME,
+                                   GENERATING: REAL_TIME}[self.mode])
         )
-        self.low_res_btn.setStyleSheet(self.LOW_RES_BTN_STYLE)
-        self.low_res_btn.setFocusPolicy(Qt.NoFocus)
-        layout.addWidget(self.low_res_btn)
         
-        # Generate high-res button
-        self.high_res_btn = QPushButton(self.HIGH_RES_BTN_TEXT)
         def on_high_res_clicked():
             self.set_mode(GENERATING)
             self.start_image_gen()
-        self.high_res_btn.clicked.connect(on_high_res_clicked)
-        self.high_res_btn.setStyleSheet(self.HIGH_RES_BTN_STYLE)
-        self.high_res_btn.setFocusPolicy(Qt.NoFocus)
-        layout.addWidget(self.high_res_btn)
 
-        # Save button (for high-res images only)
-        self.save_btn = QPushButton(self.SAVE_BTN_TEXT)
-        self.save_btn.clicked.connect(self.save_image)
-        self.save_btn.setStyleSheet(self.SAVE_BTN_STYLE)
-        self.high_res_btn.setFocusPolicy(Qt.NoFocus)
+        self.high_res_btn = make_button(
+            self.HIGH_RES_BTN_TEXT,
+            self.HIGH_RES_BTN_STYLE, 
+            on_high_res_clicked
+        )
+        
+        self.save_btn = make_button(
+            self.SAVE_BTN_TEXT,
+            self.SAVE_BTN_STYLE,
+            self.save_image
+        )
         self.save_btn.setEnabled(False)
+        
+        layout.addWidget(self.low_res_btn)
+        layout.addWidget(self.high_res_btn)
         layout.addWidget(self.save_btn)
 
     def pick_color(self, index):

@@ -499,9 +499,7 @@ class FractalApp(QMainWindow):
             image = Image.fromarray(np.swapaxes(img.astype(np.uint8), 0, 1))
             image.show()
 
-            # scaled_pixmap = self.original_pixmap.scaled(
-            #     new_size, Qt.KeepAspectRatio, Qt.SmoothTransformation
-            # )
+            self.display_image(img, size=self.fractal_region.size())
 
             # Re-enable generate button
             self.high_res_btn.setText(self.HIGH_RES_BTN_TEXT)
@@ -510,14 +508,18 @@ class FractalApp(QMainWindow):
             # enable save button
             self.save_btn.setEnabled(True)
 
-    def display_image(self, img):
+    def display_image(self, img, size=None):
         img = np.ascontiguousarray(np.swapaxes(img.astype(np.uint8), 0, 1))
         qimg = QImage(img.data, img.shape[1], img.shape[0], img.strides[0], QImage.Format_RGB888)
         
         # Convert to QPixmap and display
         pixmap = QPixmap.fromImage(qimg)
+        if size != None:
+            pixmap = pixmap.scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
         self.fractal_region.setPixmap(pixmap)
-        self.fractal_region.resize(pixmap.size())
+
+        # self.fractal_region.resize(pixmap.size())
 
     def on_zoom(self, x_ratio, y_ratio, zoom_proportion):
         if not self.real_time_mode:

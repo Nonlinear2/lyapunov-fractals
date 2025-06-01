@@ -583,7 +583,7 @@ class FractalApp(QMainWindow):
         
         # Convert to QPixmap and display
         pixmap = QPixmap.fromImage(qimg)
-        if size != None:
+        if size:
             pixmap = pixmap.scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
         self.fractal_region.setPixmap(pixmap)

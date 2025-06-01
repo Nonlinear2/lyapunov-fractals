@@ -34,20 +34,26 @@ Running the file `generate_fractal_image.py` creates an image of a fractal and d
 Running the file `generate_fractal_video.py` creates and stores a gif cycling through slices of a 3D lyapunov fractal in the $z$ direction.
 
 # Details
-The main class is `ComputeFractals`. Its parameters are the following:
-- `x_min`, `x_max`, `y_min`, `y_max`, `z_min`, `z_max` define the region in which fractals will be computed. These values need to be between 0 and 4.
+## Theory
+A 2D lyapunov fractal is created by computing the lyapunov exponent for each screen pixel of modified logistic sequences.
+Given a pattern and an $x$, $y$ position on the screen, these sequences are defined as 
+$$x_{n+1} = r_{x, y}(n) x_n (1 - x_n)$$
+where $r_{x, y}(n) = pattern[n]$
+Then, the pixel is colored according to the value of the lyapunov exponent.
+
+More precisely, the lyapunov exponent is calculated using 
+$$\lambda = \lim_{N \to +\infty} \frac{1}{N}\sum_{n=1}^{N}\ln|r_n\cdot(1-2x_n)|$$
+[...]
+
+Interestingly, the diagonal of a 2D lyapunov fractal is always the same, it is given by the lyapunov exponents of the logistic for different values of $r$.
+
+## Implementation
+You can set the fractal parameters of `ComputeFractals` using the `set_parameters` method, which can take in any combination of:
+- `x_min`, `x_max`, `y_min`, `y_max`, `z` define the region in which fractals will be computed. These values need to be between 0 and 4.
 - `size`: the size of the generated images in pixels.
 - `colors`: a list of hex colors
-- `color_resolution`: how many different shades of the color list `self.COLORS` are used.
+- `color_resolution`: how many different shades of the color list are used.
 - `pattern`: a string of "x", "y", and "z". The pattern defines which fractal is generated.
 - `num_iter`: defines at which precision the pixel values are computed.
 
-These parameters can be modified after the class construction by accessing them directly, except for:
-- num_iter which can not be changed.
-- the $x$ and $y$ boundaries, that you can change with the `set_region` method.
-- the pattern, that you can change with the `set_pattern` method.
-
-The main method of `ComputeFractals` is `compute_fractal(z)`, which computes
-a slice of a 3D lyapunov fractal at a given $z$ value. This parameter doesn't matter if $z$ doesn't appear in the pattern.
-
-The class `FractalZoom` with the `run` method creates a pygame window and handles the zoom logic.
+Calling `compute_fractal()` then computes a slice of a 3D lyapunov fractal using the current parameters.

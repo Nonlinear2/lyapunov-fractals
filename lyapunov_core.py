@@ -20,13 +20,6 @@ class ComputeFractals:
         "colors": ColorPalettes.red_orange_yellow
     }
 
-    # @param x_min, x_max, y_min, y_max, z_min, z_max define the region in which
-    # the fractal is computed. These values need to be between 0 and 4.
-    # @param size the size of the image in pixels.
-    # @param colors a list of hex colors
-    # @param color_resolution how many different shades of self.colors are used
-    # @param pattern a string of x, y, and z. the pattern defines which fractal is generated.
-    # @num_iter at which precision are the pixel values computed.
     def __init__(self):
 
         self.gpu = cuda.get_current_device()
@@ -36,10 +29,14 @@ class ComputeFractals:
 
         self.set_parameters(**ComputeFractals.DEFAULT_PARAMS)
 
+    # @param x_min, x_max, y_min, y_max, z define the region in which
+    # the fractal is computed. These values need to be between 0 and 4.
+    # @param size the size of the image in pixels.
+    # @param colors a list of hex colors such as "#ff0ed6"
+    # @param color_resolution how many different shades of self.colors are used
+    # @param pattern a string of x, y, and z. the pattern defines which fractal is generated.
+    # @num_iter at which precision are the pixel values computed.
     def set_parameters(self, **kwargs):
-        # "pattern", "x_min", "x_max", "y_min", "y_max", "z", 
-        # "size", "color_resolution", "num_iter", "colors"
-
         def is_new(attr):
            return attr in kwargs and kwargs[attr] != getattr(self, attr, None)
 
@@ -140,7 +137,6 @@ class ComputeFractals:
         self.fractal_kernel = fractal_kernel
 
     def compute_fractal(self):
-
         if self.size**2 <= self.gpu.MAX_THREADS_PER_BLOCK:
             blockspergrid = 1
             threadsperblock = self.size**2

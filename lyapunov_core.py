@@ -37,6 +37,11 @@ class ComputeFractals:
     # @param pattern a string of x, y, and z. the pattern defines which fractal is generated.
     # @num_iter at which precision are the pixel values computed.
     def set_parameters(self, **kwargs):
+        for key in kwargs:
+            if key not in {"x_min", "x_max", "y_min", "y_max", "z", "size", "colors",
+                        "color_resolution", "pattern", "num_iter"}:
+                raise TypeError(f"set_parameters() got an unexpected argument '{key}'")
+
         def is_new(attr):
            return attr in kwargs and kwargs[attr] != getattr(self, attr, None)
 
@@ -113,7 +118,7 @@ class ComputeFractals:
         @cuda.jit
         def fractal_kernel(x_space, y_space, z):
             pos = cuda.grid(1)
-            lambda_ = 0
+            lambda_N = 0
             x_n = 0.5
             x = x_space[pos]
             y = y_space[pos]
@@ -217,7 +222,7 @@ class ComputeFractals:
         image = gradient[self.indexes].reshape((self.size, self.size, 3))
         image = np.flip(image, axis=1)
 
-        return image
+        return image.astype(np.uint8)
 
 
     def create_fractal_video(self, z_min, z_max, num_frames):
@@ -227,7 +232,8 @@ class ComputeFractals:
         video = []
         for idx, z in enumerate(np.linspace(z_min, z_max, num_frames), 1):
             self.set_parameters(z=z)
-            image = Image.fromarray(self.compute_fractal().astype(np.uint8)).convert("RGB")
+            self.compute_fractal()
+            image = Image.fromarray(self.apply_gradient()).convert("RGB")
             video.append(image)
             if self.verbose:
                 print(f"frame {idx}/{num_frames}", end="\r")

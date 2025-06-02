@@ -565,7 +565,7 @@ class FractalApp(QMainWindow):
 
             self.current_high_res_image = img
             # Show high-res image in new window using PIL
-            image = Image.fromarray(np.swapaxes(img.astype(np.uint8), 0, 1))
+            image = Image.fromarray(np.swapaxes(img, 0, 1))
             image.show()
 
             self.display_image(img, size=self.fractal_region.size())
@@ -584,7 +584,7 @@ class FractalApp(QMainWindow):
         )
 
     def display_image(self, img, size=None):
-        img = np.ascontiguousarray(np.swapaxes(img.astype(np.uint8), 0, 1))
+        img = np.ascontiguousarray(np.swapaxes(img, 0, 1))
         qimg = QImage(img.data, img.shape[1], img.shape[0], img.strides[0], QImage.Format_RGB888)
         
         # Convert to QPixmap and display
@@ -679,7 +679,7 @@ class FractalApp(QMainWindow):
                 )
 
                 if file_path:
-                    img = Image.fromarray(np.swapaxes(self.current_high_res_image.astype(np.uint8), 0, 1))
+                    img = Image.fromarray(np.swapaxes(self.current_high_res_image, 0, 1))
                     img.save(file_path)
                     QMessageBox.information(self, "Success", f"High-resolution image saved to {file_path}")
 

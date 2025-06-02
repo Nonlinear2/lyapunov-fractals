@@ -21,7 +21,7 @@ to install all the necessary packages.
 
 ## Features
 ### Interactive pyside window
-Running the file `fractal_zoom.py` opens a window where you can modify the fractal parameters:
+Running the file `gui.py` opens a window where you can modify the fractal parameters:
 - Press the `left mouse button` to zoom
 - Press the `right mouse button` to dezoom
 - Press `space` to increase the $z$ coordinate of the fractal
@@ -73,7 +73,7 @@ To compute $\lambda$, we write:
 
 $$\begin{align*}\lambda &\approx \lim\_{\epsilon \to 0, N \to +\infty}\frac{1}{N}\ln(\frac{|f^N(v\_0) - f^N(v\_0 + \epsilon)|}{\epsilon})\\
 &\approx \lim\_{N \to +\infty}\frac{1}{N}\ln|\frac{df^N}{dx}|\_{v\_0}\\
-&\approx \lim\_{N \to +\infty}\frac{1}{t}\ln\left[|\frac{df}{dx}|\_{f^{N-1}(v\_0)} \cdot |\frac{df^{N-1}}{dx}|\_{f^{N-2}(v\_0)} \right]\\
+&\approx \lim\_{N \to +\infty}\frac{1}{N}\ln\left[|\frac{df}{dx}|\_{f^{N-1}(v\_0)} \cdot |\frac{df^{N-1}}{dx}|\_{f^{N-2}(v\_0)} \right]\\
 &\approx \lim\_{N \to +\infty}\frac{1}{N}\ln\left[|\frac{df}{dx}|\_{f^{N-1}(v\_0)} \cdot |\frac{df}{dx}|\_{f^{N-2}(v\_0)} \dots |\frac{df}{dx}|\_{v\_0} \right]\\
 &\approx \lim\_{N \to +\infty}\frac{1}{N} \sum\_{n=1}^{N-1}\ln|\frac{df}{dx}|\_{f^{n}(v\_0)}\end{align*}$$
 
@@ -86,8 +86,8 @@ Here is the kernel that runs for each image pixel
 for i in range(num_iter):
     r = (x, y, z)[sequence[i%len_sequence]]
     x_n = r*x_n*(1-x_n)
-    lambda_ += log(abs(r*(1-2*x_n)))
-x_space[pos] = lambda_
+    lambda_N += log(abs(r*(1-2*x_n)))
+x_space[pos] = lambda_N
 ```
 
 ## Implementation

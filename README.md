@@ -71,13 +71,11 @@ $|f^N(v_0) - f^N(v_0 + \epsilon)| \approx \epsilon e^{\lambda N}$
 Here we assume that the distance is an exponential function of time.
 To compute $\lambda$, we write:
 
-\begin{align*}
-\lambda &\approx \lim_{\epsilon \to 0, N \to +\infty}\frac{1}{N}\ln(\frac{|f^N(v_0) - f^N(v_0 + \epsilon)|}{\epsilon})\\
-&\approx \lim_{N \to +\infty}\frac{1}{N}\ln|\frac{df^N}{dx}|_{v_0}\\
-&\approx \lim_{N \to +\infty}\frac{1}{t}\ln\left[|\frac{df}{dx}|_{f^{N-1}(v_0)} \cdot |\frac{df^{N-1}}{dx}|_{f^{N-2}(v_0)} \right]\\
-&\approx \lim_{N \to +\infty}\frac{1}{N}\ln\left[|\frac{df}{dx}|_{f^{N-1}(v_0)} \cdot |\frac{df}{dx}|_{f^{N-2}(v_0)} \dots |\frac{df}{dx}|_{v_0} \right]\\
-&\approx \lim_{N \to +\infty}\frac{1}{N} \sum_{n=1}^{N-1}\ln|\frac{df}{dx}|_{f^{n}(v_0)}
-\end{align*}
+$$\begin{align*}\lambda &\approx \lim\_{\epsilon \to 0, N \to +\infty}\frac{1}{N}\ln(\frac{|f^N(v\_0) - f^N(v\_0 + \epsilon)|}{\epsilon})\\
+&\approx \lim\_{N \to +\infty}\frac{1}{N}\ln|\frac{df^N}{dx}|\_{v\_0}\\
+&\approx \lim\_{N \to +\infty}\frac{1}{t}\ln\left[|\frac{df}{dx}|\_{f^{N-1}(v\_0)} \cdot |\frac{df^{N-1}}{dx}|\_{f^{N-2}(v\_0)} \right]\\
+&\approx \lim\_{N \to +\infty}\frac{1}{N}\ln\left[|\frac{df}{dx}|\_{f^{N-1}(v\_0)} \cdot |\frac{df}{dx}|\_{f^{N-2}(v\_0)} \dots |\frac{df}{dx}|\_{v\_0} \right]\\
+&\approx \lim\_{N \to +\infty}\frac{1}{N} \sum\_{n=1}^{N-1}\ln|\frac{df}{dx}|\_{f^{n}(v\_0)}\end{align*}$$
 
 We can therefore approximate $\lambda$ by truncating the series at large $N$. In our case, $f_r(x) = rx(1-x)$ so $\frac{df}{dx} = r(1-2x)$. Moreover, as we color our pixels by comparing the $\lambda$ values at each pixel, the constant factor $\frac{1}{N}$ does not change the resulting image. We can therefore discard it and write:
 $$\lambda'_N = \sum_{n=1}^{N}\ln|r_n(1-2f^{n}(v_0))|$$

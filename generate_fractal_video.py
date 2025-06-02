@@ -1,6 +1,5 @@
 from lyapunov_core import *
 import numpy as np
-from random import randint
 
 def main():
     pattern = "xyzzyxx"

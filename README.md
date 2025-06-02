@@ -34,6 +34,8 @@ Running the file `generate_fractal_image.py` creates an image of a fractal and d
 Running the file `generate_fractal_video.py` creates and stores a gif cycling through slices of a 3D lyapunov fractal in the $z$ direction.
 
 # Details
+In the following section we will discuss 2D lyapunov fractals. The generalization to higher dimensions is quite simple as you just need to allow the more coordinates in the pattern, and compute the modified logistic sequence values accordingly.
+
 ## Theory
 A 2D lyapunov fractal is created by computing the _lyapunov exponent_ for each screen pixel of a modified logistic sequence.
 
@@ -100,3 +102,4 @@ You can set the fractal parameters of `ComputeFractals` using the `set_parameter
 - `num_iter`: defines at which precision the pixel values are computed.
 
 Calling `compute_fractal()` then computes a slice of a 3D lyapunov fractal using the current parameters.
+`apply_gradient()` then applies a color gradient and returns an image.

@@ -477,9 +477,9 @@ class FractalApp(QMainWindow):
                 colors.append(color)
 
         if not colors:
-            colors = ["#000000"]  # Default color if none provided
+            colors = ["#000000"]  # default color if none provided
         
-        # Choose resolution settings based on mode
+        # choose resolution settings based on mode
         if self.mode == REAL_TIME:
             size = self.low_res_size.value()
             iterations = self.low_res_iter.value()
@@ -507,16 +507,16 @@ class FractalApp(QMainWindow):
         if mode == REAL_TIME:
             self.save_btn.setEnabled(False)
 
-            # Update button to show exit option
+            # update button to show exit option
             self.low_res_btn.setText("Exit Real-Time Mode")
             self.low_res_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 10px; }")
             self.low_res_btn.setEnabled(True)
 
             self.start_image_gen()
 
-        # Stop any pending regeneration timer
+        # stop any pending regeneration timer
         self.regeneration_timer.stop()
-        # Clear the display
+        # clear the display
         self.fractal_region.clear()
 
         if mode == IDLE:
@@ -538,7 +538,7 @@ class FractalApp(QMainWindow):
         elif mode == HIGH_RES:
             self.loading_animation_timer.stop()
 
-            # Re-enable generate button
+            # re enable generate button
             self.high_res_btn.setText(self.HIGH_RES_BTN_TEXT)
             self.high_res_btn.setEnabled(True)
 
@@ -587,7 +587,6 @@ class FractalApp(QMainWindow):
         img = np.ascontiguousarray(np.swapaxes(img, 0, 1))
         qimg = QImage(img.data, img.shape[1], img.shape[0], img.strides[0], QImage.Format_RGB888)
         
-        # Convert to QPixmap and display
         pixmap = QPixmap.fromImage(qimg)
         if size:
             pixmap = pixmap.scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -600,7 +599,7 @@ class FractalApp(QMainWindow):
 
         new_bounds = self.zoom_to(x_ratio, y_ratio, zoom_proportion)
 
-        # Update input fields
+        # update input fields
         self.x_min.setValue(new_bounds[0])
         self.x_max.setValue(new_bounds[1])
         self.y_min.setValue(new_bounds[2])

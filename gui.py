@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QGroupBox, QSpinBox, QFileDialog)
 
 from PySide6.QtCore import Qt, QThread, Signal, QTimer
-from PySide6.QtGui import QPixmap, QImage, QRegularExpressionValidator, QColor
+from PySide6.QtGui import QPixmap, QImage, QRegularExpressionValidator, QColor, QIcon
 from numba.cuda import get_current_device
 from lyapunov_core import ComputeFractals
 from utils import valid_hex_string
@@ -147,6 +147,10 @@ class FractalApp(QMainWindow):
         super().__init__()
         self.setWindowTitle("Lyapunov Fractal Generator")
         self.setMinimumSize(*Config.APP_MIN_SIZE)
+
+        icon = QIcon()
+        icon.addFile(".\outputs\lyapunov_xyyyxyxyy.png")
+        self.setWindowIcon(icon)
 
         # Initialize variables
         self.current_high_res_image = None
@@ -424,13 +428,13 @@ class FractalApp(QMainWindow):
 
     def keyPressEvent(self, event):
         key = event.key()
-        if key in (Qt.Key_Space, Qt.Key_Backspace):
+        if key in (Qt.Key_Space, Qt.Key_Backspace) and self.mode == REAL_TIME:
             self.keys_pressed.add(key)
             self.continuous_z_change()
             if not self.z_timer.isActive():
                 self.z_timer.start()
             event.accept()
-        elif key == Qt.Key_C:
+        elif key == Qt.Key_C and self.mode == REAL_TIME:
             # avoid regeneration delay
             self.pattern.blockSignals(True)
             self.pattern.setText(self.pattern.text()[-1] + self.pattern.text()[:-1])
@@ -452,10 +456,6 @@ class FractalApp(QMainWindow):
             super().keyReleaseEvent(event)
 
     def continuous_z_change(self):
-        if self.mode != REAL_TIME:
-            self.z_timer.stop()
-            return
-
         delta = 0.01
         if Qt.Key_Backspace in self.keys_pressed:
             delta *= -1

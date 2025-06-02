@@ -1,8 +1,8 @@
 # Lyapunov fractals
 This is a simple python project to render lyapunov fractals. It relies on numba cuda kernels for relatively fast fractal generation.
 
-![Alt text](./outputs/lyapunov_yyxxyyyyyzz.png?raw=true)
-![Alt text](./outputs/lyapunov_xyyyxyxyy.png?raw=true)
+![Alt text](./images/lyapunov_yyxxyyyyyzz.png?raw=true)
+![Alt text](./images/lyapunov_xyyyxyxyy.png?raw=true)
 
 ## Requirements
 
@@ -21,6 +21,7 @@ to install all the necessary packages.
 
 ## Features
 ### Interactive pyside window
+![Alt text](./images/demo.png)
 Running the file `gui.py` opens a window where you can modify the fractal parameters:
 - Press the `left mouse button` to zoom
 - Press the `right mouse button` to dezoom

@@ -131,8 +131,8 @@ class ComputeFractals:
             for i in range(num_iter):
                 r = (x, y, z)[sequence[i%len_sequence]]
                 x_n = r*x_n*(1-x_n)
-                lambda_ += log(abs(r*(1-2*x_n)))
-            x_space[pos] = lambda_  
+                lambda_N += log(abs(r*(1-2*x_n)))
+            x_space[pos] = lambda_N
         
         self.fractal_kernel = fractal_kernel
 

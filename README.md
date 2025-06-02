@@ -35,17 +35,61 @@ Running the file `generate_fractal_video.py` creates and stores a gif cycling th
 
 # Details
 ## Theory
-A 2D lyapunov fractal is created by computing the lyapunov exponent for each screen pixel of modified logistic sequences.
-Given a pattern and an $x$, $y$ position on the screen, these sequences are defined as 
-$$x_{n+1} = r_{x, y}(n) x_n (1 - x_n)$$
-where $r_{x, y}(n) = pattern[n]$
-Then, the pixel is colored according to the value of the lyapunov exponent.
+A 2D lyapunov fractal is created by computing the _lyapunov exponent_ for each screen pixel of a modified logistic sequence.
 
-More precisely, the lyapunov exponent is calculated using 
-$$\lambda = \lim_{N \to +\infty} \frac{1}{N}\sum_{n=1}^{N}\ln|r_n\cdot(1-2x_n)|$$
-[...]
+### Modified Logistic sequences 
+We call _pattern_ a chain of "x" and "y" characters, such as "xyyyxyxx".
 
-Interestingly, the diagonal of a 2D lyapunov fractal is always the same, it is given by the lyapunov exponents of the logistic for different values of $r$.
+Given a pattern and a value for $x$ and $y$, we define a sequence $f^N(v_0)$ as 
+$$f^{N+1} = r_{x, y}(N) \cdot  f^N(v_0) \cdot (1 - f^N(v_0))$$
+where $r_{x, y}(N) = \text{pattern}[N \;\;\text{mod} \; \text{length(pattern)}]$
+
+### Fractal algorithm
+
+First associate the pixels of the screen to a grid of coordinates between 0 and 4 (this is the range on which the logistic sequence is stable).
+
+Then for each pixel on the screen:
+1. get the $x$ and $y$ coordinates corresponding to the pixel position.
+2. Compute the lyapunov exponent of the modified logistic sequence $(f^N(0.5))$
+3. Then, color the pixel according to the value of the value of the lyapunov exponent.
+
+
+Interestingly, the diagonal $x = y$ of any 2D lyapunov fractal is always the same, as the pattern doesn't influence the sequence. The color of this diagonal is given by the lyapunov exponents of the logistic sequence for values of $r$ going from 0 to 4.
+
+### The lyapunov exponent
+Let $(f^N(v_0))_{N \in \mathbb{N}}$ be a sequence defined recursively by
+
+$f^N(v_0)=\begin{cases}
+x \quad \text{if } N=0\\
+f(f^{N}(v_0)) \quad \text{if } N > 0
+\end{cases}$
+
+The lyapunov exponent $\lambda$ is a measure of how quickly an infinitesimal change in initial condition $v_0$ evolves over time. So for large $N$ and small $\epsilon$:
+
+$|f^N(v_0) - f^N(v_0 + \epsilon)| \approx \epsilon e^{\lambda N}$
+
+Here we assume that the distance is an exponential function of time.
+To compute $\lambda$, we write:
+
+\begin{align*}
+\lambda &\approx \lim_{\epsilon \to 0, N \to +\infty}\frac{1}{N}\ln(\frac{|f^N(v_0) - f^N(v_0 + \epsilon)|}{\epsilon})\\
+&\approx \lim_{N \to +\infty}\frac{1}{N}\ln|\frac{df^N}{dx}|_{v_0}\\
+&\approx \lim_{N \to +\infty}\frac{1}{t}\ln\left[|\frac{df}{dx}|_{f^{N-1}(v_0)} \cdot |\frac{df^{N-1}}{dx}|_{f^{N-2}(v_0)} \right]\\
+&\approx \lim_{N \to +\infty}\frac{1}{N}\ln\left[|\frac{df}{dx}|_{f^{N-1}(v_0)} \cdot |\frac{df}{dx}|_{f^{N-2}(v_0)} \dots |\frac{df}{dx}|_{v_0} \right]\\
+&\approx \lim_{N \to +\infty}\frac{1}{N} \sum_{n=1}^{N-1}\ln|\frac{df}{dx}|_{f^{n}(v_0)}
+\end{align*}
+
+We can therefore approximate $\lambda$ by truncating the series at large $N$. In our case, $f_r(x) = rx(1-x)$ so $\frac{df}{dx} = r(1-2x)$. Moreover, as we color our pixels by comparing the $\lambda$ values at each pixel, the constant factor $\frac{1}{N}$ does not change the resulting image. We can therefore discard it and write:
+$$\lambda'_N = \sum_{n=1}^{N}\ln|r_n(1-2f^{n}(v_0))|$$
+
+Here is the kernel that runs for each image pixel
+```python
+for i in range(num_iter):
+    r = (x, y, z)[sequence[i%len_sequence]]
+    x_n = r*x_n*(1-x_n)
+    lambda_ += log(abs(r*(1-2*x_n)))
+x_space[pos] = lambda_
+```
 
 ## Implementation
 You can set the fractal parameters of `ComputeFractals` using the `set_parameters` method, which can take in any combination of:

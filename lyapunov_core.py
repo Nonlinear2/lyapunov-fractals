@@ -225,7 +225,7 @@ class ComputeFractals:
         return image.astype(np.uint8)
 
 
-    def create_fractal_video(self, z_min, z_max, num_frames):
+    def create_fractal_video(self, z_min, z_max, num_frames, verbose = True):
         assert all([(v >= 0) and (v <= 4) for v in [z_min, z_max]])
         assert z_min < z_max
 
@@ -235,8 +235,8 @@ class ComputeFractals:
             self.compute_fractal()
             image = Image.fromarray(self.apply_gradient()).convert("RGB")
             video.append(image)
-            if self.verbose:
+            if verbose:
                 print(f"frame {idx}/{num_frames}", end="\r")
-        if self.verbose:
+        if verbose:
             print()
         return video

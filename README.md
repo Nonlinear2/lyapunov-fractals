@@ -15,9 +15,9 @@ python -m venv .venv
 .venv\Scripts\activate
 ```
 
-Then run 
-```pip install -r requirements.txt```
-to install all the necessary packages.
+Then run `pip install -r requirements.txt` to install all the necessary packages.
+
+Finally, run `python ./gui.py` to start the user interface.
 
 ## Features
 ### Interactive pyside window
@@ -96,7 +96,7 @@ x_space[pos] = lambda_N
 You can set the fractal parameters of `ComputeFractals` using the `set_parameters` method, which can take in any combination of:
 - `x_min`, `x_max`, `y_min`, `y_max`, `z` define the region in which fractals will be computed. These values need to be between 0 and 4.
 - `size`: the size of the generated images in pixels.
-- `colors`: a list of hex colors
+- `colors`: a list of hex colors such as "#ff0ed6".
 - `color_resolution`: how many different shades of the color list are used.
 - `pattern`: a string of "x", "y", and "z". The pattern defines which fractal is generated.
 - `num_iter`: defines at which precision the pixel values are computed.

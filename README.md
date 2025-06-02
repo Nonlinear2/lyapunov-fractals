@@ -44,18 +44,17 @@ A 2D lyapunov fractal is created by computing the _lyapunov exponent_ for each s
 We call _pattern_ a chain of "x" and "y" characters, such as "xyyyxyxx".
 
 Given a pattern and a value for $x$ and $y$, we define a sequence $f^N(v_0)$ as 
-$$f^{N+1} = r_{x, y}(N) \cdot  f^N(v_0) \cdot (1 - f^N(v_0))$$
+$$f^{N+1}(v_0) = r_{x, y}(N) \cdot  f^N(v_0) \cdot (1 - f^N(v_0))$$
 where $r_{x, y}(N) = \text{pattern}[N \\; \\;\text{mod} \\; \text{length(pattern)}]$
 
 ### Fractal algorithm
 
-First associate the pixels of the screen to a grid of coordinates between 0 and 4 (this is the range on which the logistic sequence is stable).
+We first associate the pixels of the screen to a grid of coordinates between 0 and 4 (this is the range on which the logistic sequence is stable).
 
 Then for each pixel on the screen:
-1. get the $x$ and $y$ coordinates corresponding to the pixel position.
-2. Compute the lyapunov exponent of the modified logistic sequence $(f^N(0.5))$
-3. Then, color the pixel according to the value of the value of the lyapunov exponent.
-
+1. Get the $x$ and $y$ coordinates corresponding to the pixel position.
+2. Compute the lyapunov exponent of the sequence $(f^N(0.5))$
+3. Then, color the pixel according to the value of the lyapunov exponent.
 
 Interestingly, the diagonal $x = y$ of any 2D lyapunov fractal is always the same, as the pattern doesn't influence the sequence. The color of this diagonal is given by the lyapunov exponents of the logistic sequence for values of $r$ going from 0 to 4.
 

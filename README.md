@@ -42,7 +42,7 @@ We call _pattern_ a chain of "x" and "y" characters, such as "xyyyxyxx".
 
 Given a pattern and a value for $x$ and $y$, we define a sequence $f^N(v_0)$ as 
 $$f^{N+1} = r_{x, y}(N) \cdot  f^N(v_0) \cdot (1 - f^N(v_0))$$
-where $r_{x, y}(N) = \text{pattern}[N \;\;\text{mod} \; \text{length(pattern)}]$
+where $r_{x, y}(N) = \text{pattern}[N \\; \\;\text{mod} \\; \text{length(pattern)}]$
 
 ### Fractal algorithm
 
@@ -59,10 +59,10 @@ Interestingly, the diagonal $x = y$ of any 2D lyapunov fractal is always the sam
 ### The lyapunov exponent
 Let $(f^N(v_0))_{N \in \mathbb{N}}$ be a sequence defined recursively by
 
-$f^N(v_0)=\begin{cases}
+$$f^N(v_0)=\begin{cases}
 x \quad \text{if } N=0\\
 f(f^{N}(v_0)) \quad \text{if } N > 0
-\end{cases}$
+\end{cases}$$
 
 The lyapunov exponent $\lambda$ is a measure of how quickly an infinitesimal change in initial condition $v_0$ evolves over time. So for large $N$ and small $\epsilon$:
 

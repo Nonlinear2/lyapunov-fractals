@@ -431,7 +431,13 @@ class FractalApp(QMainWindow):
                 self.z_timer.start()
             event.accept()
         elif key == Qt.Key_C:
+            # avoid regeneration delay
+            self.pattern.blockSignals(True)
             self.pattern.setText(self.pattern.text()[-1] + self.pattern.text()[:-1])
+            self.pattern.blockSignals(False)
+
+            self.regeneration_timer.stop()  # cancel any pending regeneration
+            self.start_image_gen()
         else:
             super().keyPressEvent(event)
 

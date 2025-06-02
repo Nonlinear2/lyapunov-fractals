@@ -78,7 +78,8 @@ $$\begin{align*}\lambda &\approx \lim\_{\epsilon \to 0, N \to +\infty}\frac{1}{N
 &\approx \lim\_{N \to +\infty}\frac{1}{N} \sum\_{n=1}^{N-1}\ln|\frac{df}{dx}|\_{f^{n}(v\_0)}\end{align*}$$
 
 We can therefore approximate $\lambda$ by truncating the series at large $N$. In our case, $f_r(x) = rx(1-x)$ so $\frac{df}{dx} = r(1-2x)$. Moreover, as we color our pixels by comparing the $\lambda$ values at each pixel, the constant factor $\frac{1}{N}$ does not change the resulting image. We can therefore discard it and write:
-$$\lambda'_N = \sum_{n=1}^{N}\ln|r_n(1-2f^{n}(v_0))|$$
+
+$$\lambda'\_N = \sum_{n=1}^{N}\ln|r\_n(1-2f^{n}(v\_0))|$$
 
 Here is the kernel that runs for each image pixel
 ```python

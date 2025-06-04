@@ -61,9 +61,9 @@ Interestingly, the diagonal $x = y$ of any 2D lyapunov fractal is always the sam
 ### The lyapunov exponent
 Let $(f^N(v_0))_{N \in \mathbb{N}}$ be a sequence defined recursively by
 
-$$f^{N+1}(v_0)=\begin{cases}
+$$f^{N}(v_0)=\begin{cases}
 v_0 \quad \text{if } N=0\\
-f(f^{N}(v_0)) \quad \text{if } N > 0
+f(f^{N-1}(v_0)) \quad \text{if } N > 0
 \end{cases}$$
 
 The lyapunov exponent $\lambda$ is a measure of how quickly an infinitesimal change in initial condition $v_0$ evolves over time. So for large $N$ and small $\epsilon$:

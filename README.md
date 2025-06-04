@@ -61,8 +61,8 @@ Interestingly, the diagonal $x = y$ of any 2D lyapunov fractal is always the sam
 ### The lyapunov exponent
 Let $(f^N(v_0))_{N \in \mathbb{N}}$ be a sequence defined recursively by
 
-$$f^N(v_0)=\begin{cases}
-x \quad \text{if } N=0\\
+$$f^{N+1}(v_0)=\begin{cases}
+v_0 \quad \text{if } N=0\\
 f(f^{N}(v_0)) \quad \text{if } N > 0
 \end{cases}$$
 

@@ -86,7 +86,7 @@ class ComputeFractals:
                 setattr(self, param, kwargs[param])
 
         assert set(list(self.pattern)).issubset({"x", "y", "z"})
-        assert all([(v >= 0) and (v <= 4) for v in [self.x_min, self.x_max, self.y_min, self.y_max, self.z]])
+        assert all([(v > 0) and (v <= 4) for v in [self.x_min, self.x_max, self.y_min, self.y_max, self.z]])
         assert self.color_resolution > 1
 
     def set_progress_callback(self, progress_callback):
@@ -126,11 +126,11 @@ class ComputeFractals:
 
             # in the following cases, the log is undefined
             # so we slightly modify the values
-            if (abs(x - 0) < epsilon) or (abs(x - 2) < epsilon):
+            if abs(x - 2) < epsilon:
                 x += epsilon
-            if (abs(y - 0) < epsilon) or (abs(y - 2) < epsilon):
+            if abs(y - 2) < epsilon:
                 y += epsilon
-            if (abs(z - 0) < epsilon) or (abs(z - 2) < epsilon):
+            if abs(z - 2) < epsilon:
                 z += epsilon
             
             for i in range(num_iter):
@@ -226,7 +226,7 @@ class ComputeFractals:
 
 
     def create_fractal_video(self, z_min, z_max, num_frames, verbose = True):
-        assert all([(v >= 0) and (v <= 4) for v in [z_min, z_max]])
+        assert all([(v > 0) and (v <= 4) for v in [z_min, z_max]])
         assert z_min < z_max
 
         video = []

@@ -40,50 +40,60 @@ In the following section we will discuss 2D lyapunov fractals. The generalizatio
 ## Theory
 A 2D lyapunov fractal is created by computing the _lyapunov exponent_ for each screen pixel of a modified logistic sequence.
 
-### Modified Logistic sequences 
+### Modified Logistic sequences
+
 We call _pattern_ a chain of "x" and "y" characters, such as "xyyyxyxx".
 
-Given a pattern and a value for $x$ and $y$, we define a sequence $f^N(v_0)$ as 
-$$f^{N+1}(v_0) = r_{x, y}(N) \cdot  f^N(v_0) \cdot (1 - f^N(v_0))$$
-where $r_{x, y}(N) = \text{pattern}[N \\; \\;\text{mod} \\; \text{length(pattern)}]$
+Given a pattern and a value for $x$ and $y$, we define a sequence $f^N(v\_0)$ by the relation
+$$
+f^{N}(v\_0) =
+\begin{cases}
+v\_0 & \text{if } N = 0 \\
+r\_{x, y}(N-1) \cdot  f^{N-1}(v\_0) \cdot (1 - f^{N-1}(v\_0)) & \text{if } N > 0
+\end{cases}
+$$
+
+where $r\_{x, y}(N) = \text{pattern}[N \\; \\;\text{mod} \\; \text{length(pattern)}]$
+
+### The lyapunov exponent
+
+For a small enough initial distance $\epsilon$ between two neighbouring points, we will assume that the distance between each sequence iteration evolves like an exponential function:
+
+$$|f^N(v\_0) - f^N(v\_0 + \epsilon)| \approx \epsilon e^{\lambda N}$$
+
+We can therefore define the Lyapunov exponent $\lambda$ to be:
+\begin{align*}\lambda &= \lim\_{N \to +\infty}\lim\_{\epsilon \to 0}\frac{1}{N}\ln(\frac{|f^N(v\_0) - f^N(v\_0 + \epsilon)|}{\epsilon})\\
+&= \lim\_{N \to +\infty}\frac{1}{N}\ln|\frac{df^N}{dx}|\_{v\_0}\\
+&= \lim\_{N \to +\infty}\frac{1}{N}\ln\left[|\frac{df}{dx}|\_{f^{N-1}(v\_0)} \cdot |\frac{df^{N-1}}{dx}|\_{f^{N-2}(v\_0)} \right]\\
+&= \lim\_{N \to +\infty}\frac{1}{N}\ln\left[|\frac{df}{dx}|\_{f^{N-1}(v\_0)} \cdot |\frac{df}{dx}|\_{f^{N-2}(v\_0)} \dots |\frac{df}{dx}|\_{v\_0} \right]\\
+&= \lim\_{N \to +\infty}\frac{1}{N} \sum\_{n=1}^{N-1}\ln|\frac{df}{dx}|\_{f^{n}(v\_0)}
+\end{align*}
+
+To compute the Lyapunov exponent numerically, we can truncate the series at a large value of $N$.\\
+
+So briefly, the lyapunov exponent $\lambda$ is a measure of how quickly an infinitesimal change in the initial condition $v\_0$ grows over time. If the Lyapunov exponent if positive, nearby points are stretched apart, and if it is negative, nearby points are compressed together.
+
 
 ### Fractal algorithm
 
-We first associate the pixels of the screen to a grid of coordinates between 0 and 4 (this is the range on which the logistic sequence is stable).
+We first associate the pixels of the screen to a grid of coordinates between 0 and 4 (this is a range on which the logistic sequence is stable).
 
 Then for each pixel on the screen:
-1. Get the $x$ and $y$ coordinates corresponding to the pixel position.
-2. Compute the lyapunov exponent of the sequence $(f^N(0.5))$
-3. Then, color the pixel according to the value of the lyapunov exponent.
+\begin{enumerate}
+    \item We get the $x$ and $y$ coordinates corresponding to the pixel position.
+    \item We compute the lyapunov exponent of the sequence $(f^N(0.5))$
+    \item Then, we color the pixel according to the value of the lyapunov exponent.
+\end{enumerate}
 
-Interestingly, the diagonal $x = y$ of any 2D lyapunov fractal is always the same, as the pattern doesn't influence the sequence. The color of this diagonal is given by the lyapunov exponents of the logistic sequence for values of $r$ going from 0 to 4.
+This algorithm is generalizable to higher dimensions than 2 by adding new letters in the logistic sequence pattern, and cycling $r$ through the corresponding space coordinates.\\
 
-### The lyapunov exponent
-Let $(f^N(v_0))_{N \in \mathbb{N}}$ be a sequence defined recursively by
+In our case, $f(x) = rx(1-x)$ so $\frac{df}{dx} = r(1-2x)$. Moreover, as we color our pixels by comparing the values of $\lambda$ at each pixel, the constant factor $\frac{1}{N}$ does not change the resulting image. We can therefore discard it and write:
 
-$$f^{N}(v_0)=\begin{cases}
-v_0 \quad \text{if } N=0\\
-f(f^{N-1}(v_0)) \quad \text{if } N > 0
-\end{cases}$$
+$$\lambda'\_N = \sum\_{n=1}^{N}\ln|r\_n(1-2f^{n}(v\_0))|$$
 
-The lyapunov exponent $\lambda$ is a measure of how quickly an infinitesimal change in initial condition $v_0$ evolves over time. So for large $N$ and small $\epsilon$:
+Interestingly, the diagonal $x = y$ of any 2D lyapunov fractal is always the same, as the pattern doesn't influence the sequence. The color of the diagonal is given by the lyapunov exponents of the classic logistic sequence for values of $r$ going from 0 to 4.\\
 
-$|f^N(v_0) - f^N(v_0 + \epsilon)| \approx \epsilon e^{\lambda N}$
-
-Here we assume that the distance is an exponential function of time.
-To compute $\lambda$, we write:
-
-$$\begin{align*}\lambda &\approx \lim\_{\epsilon \to 0, N \to +\infty}\frac{1}{N}\ln(\frac{|f^N(v\_0) - f^N(v\_0 + \epsilon)|}{\epsilon})\\
-&\approx \lim\_{N \to +\infty}\frac{1}{N}\ln|\frac{df^N}{dx}|\_{v\_0}\\
-&\approx \lim\_{N \to +\infty}\frac{1}{N}\ln\left[|\frac{df}{dx}|\_{f^{N-1}(v\_0)} \cdot |\frac{df^{N-1}}{dx}|\_{f^{N-2}(v\_0)} \right]\\
-&\approx \lim\_{N \to +\infty}\frac{1}{N}\ln\left[|\frac{df}{dx}|\_{f^{N-1}(v\_0)} \cdot |\frac{df}{dx}|\_{f^{N-2}(v\_0)} \dots |\frac{df}{dx}|\_{v\_0} \right]\\
-&\approx \lim\_{N \to +\infty}\frac{1}{N} \sum\_{n=1}^{N-1}\ln|\frac{df}{dx}|\_{f^{n}(v\_0)}\end{align*}$$
-
-We can therefore approximate $\lambda$ by truncating the series at large $N$. In our case, $f_r(x) = rx(1-x)$ so $\frac{df}{dx} = r(1-2x)$. Moreover, as we color our pixels by comparing the $\lambda$ values at each pixel, the constant factor $\frac{1}{N}$ does not change the resulting image. We can therefore discard it and write:
-
-$$\lambda'\_N = \sum_{n=1}^{N}\ln|r\_n(1-2f^{n}(v\_0))|$$
-
-Here is the kernel that runs for each image pixel
+Here is the kernel that runs for each image pixel.
 ```python
 for i in range(num_iter):
     r = (x, y, z)[sequence[i%len_sequence]]

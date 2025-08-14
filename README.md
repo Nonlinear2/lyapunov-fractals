@@ -66,9 +66,9 @@ $$\begin{align}
 &= \lim\_{N \to +\infty}\frac{1}{N} \sum\_{n=1}^{N-1}\ln|\frac{df}{dx}|\_{f^{n}(v\_0)}
 \end{align}$$
 
-To compute the Lyapunov exponent numerically, we can truncate the series at a large value of $N$.\\
+To compute the Lyapunov exponent numerically, we can truncate the series at a large value of $N$.
 
-So briefly, the lyapunov exponent $\lambda$ is a measure of how quickly an infinitesimal change in the initial condition $v\_0$ grows over time. If the Lyapunov exponent if positive, nearby points are stretched apart, and if it is negative, nearby points are compressed together.
+So briefly, the lyapunov exponent $\lambda$ is a measure of how quickly an infinitesimal change in the initial condition $v\_0$ grows over time. If the Lyapunov exponent is positive, nearby points are stretched apart, and if it is negative, they are compressed together.
 
 
 ### Fractal algorithm
